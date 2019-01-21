@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset=utf-8>
+        <title>Turtle World</title>
+        <link rel=stylesheet href=index.css>
+    </head>
+    <body>
+        <div id=logo-display></div>
+        <div id=logo-console></div>
+        <textarea id=logo-input>
+; Reset screen if you run it again
+cs up seth 0 setpos [0 0]
+
+up back 100 right 10 down
+repeat 18 [
+    ; 'repeat' takes a block of additional
+    ; instructions that run in the same context
+    forward 200 right 10 back 200 right 10
+]
+
+print "Done!"</textarea>
+        <button id=logo-run>Execute</button>
+
+        <script src=index.js async></script>
+    </body>
+</html>

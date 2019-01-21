@@ -1,0 +1,52 @@
+#logo-display {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 240px;
+    text-align: center;
+}
+#logo-display canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+#logo-console {
+    background-color: lightgrey;
+    position: absolute;
+    left: 0;
+    right: 50%;
+    bottom: 0;
+    height: 240px;
+    overflow-y: scroll;
+}
+#logo-input {
+    position: absolute;
+    right: 0;
+    width: 50%;
+    bottom: 40px;
+    height: 200px;
+}
+#logo-run {
+    position: absolute;
+    right: 0;
+    width: 50%;
+    bottom: 0;
+    height: 40px;
+}
+
+#logo-console div {
+    white-space: pre-wrap;
+}
+#logo-console div.input {
+    color: #666;
+}
+#logo-console div.output {
+    background-color: white;
+    color: black;
+}

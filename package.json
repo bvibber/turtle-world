@@ -1,0 +1,23 @@
+{
+  "name": "turtle-world",
+  "version": "1.0.0",
+  "description": "Logo interpreter and turtle graphics environment",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx parcel index.html",
+    "build": "npx parcel build --public-url ./ index.html",
+    "clean": "rm -rf dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "logo",
+    "interpreter",
+    "turtle-graphics"
+  ],
+  "author": "Brion Vibber",
+  "license": "ISC",
+  "devDependencies": {
+    "parcel-bundler": "^1.11.0"
+  },
+  "browserslist": "> 5%, not IE 11"
+}
