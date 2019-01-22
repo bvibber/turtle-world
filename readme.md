@@ -137,4 +137,5 @@ See [open projects on GitHub](https://github.com/brion/turtle-world/projects/1).
 # References
 
 * [Atari Logo reference manual](https://archive.org/details/AtariLOGOReferenceManual)
+* [Atari logo web emulator](https://archive.org/details/a8b_cart_Atari_LOGO_1983_Atari)
 * [UCBLogo user manual](https://people.eecs.berkeley.edu/~bh/usermanual)
