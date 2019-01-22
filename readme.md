@@ -8,7 +8,7 @@ See [on-web demo page](https://brionv.com/misc/turtle-world/) to try it out so f
 
 It is intended for use in interactive programming theory demos on the web. Currently it is more or less functional but incomplete. Needs cleanup in the engine, parser, and standard library, and to have hooks added to support interactive program flow visualization and debugging.
 
-Currently it requires an ES2017-level browser engine with support for `async`/`await`, but does not require native modules using the bundling via ParcelJS. It can probably be transpiled to support ES5 (IE 11) but this is not currently a priority.
+Currently it requires an ES2017-level browser engine with support for `async`/`await` and modules for direct loading, or without modules for `require` usage through a Node bundler. It can probably be transpiled further to support ES5 (IE 11) but this is not currently a priority.
 
 The Logo engine may be used in Node.js as well without the turtle graphics component.
 
