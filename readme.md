@@ -50,43 +50,24 @@ Infix operators are not yet implemented. Use procedure operations like `sum` and
 
 Variables and procedures share a common namespace.
 
-# Execution model
-
-The interpreter and all builtin procedures are implemented as JavaScript `async` functions. Logo commands may thus wait on timers, promises, or other async operations without blocking the event loop.
-
-This also allows control flow to be introspected, visualized, and debugged interactively on the web through a hook system. (Hook system not yet implemented.)
-
-# Lists
-
-Lists are implemented as instances of the `List` class.
-
-Lists are proper singly-linked lists. Each `List` record is either empty, or contains a `head` value. Every record has a `tail` pointer, which is either a non-empty list record or the empty list.
-
-Only one instance of an empty list is allowed, exposed as `List.empty`. Beware that `List.empty.tail === List.empty`. Circular references other than the empty identity are forbidden, and may cause things to break.
-
-Modifying a list record's contents is possible from JS code, but currently not exposed to Logo code. In JS code, forward building of lists (which requires modifying the tail pointers) should be done through the ListBuilder class for convenience.
-
-# Procedures
-
-Procedures ("commands" that don't return a value, and "operations" that do return a value) are represented as JavaScript `async function` objects.
-
-For built-ins implemented in JS, the functions represent themselves; user-defined Logo procedures are wrapped in a closure function which calls back into the interpreter.
-
-The number of arguments exposed in the `length` property is used to determine how many arguments to parse, so be careful about using optional parameters and rest parameters.
-
-Note that for the closure definition, the `length` property must be overridden manually based on the declared arguments in the Logo procedure definition, as the JS anonymous function uses a rest arg.
-
-Whether a procedure returns a value or not affects interpretation of Logo instruction lists, so be consistent! An empty `return` or `return undefined` will be counted as not producing output. Any other value will be returned as output.
-
 # Syntax
 
 * comments: start with `;`
 * lists: `[` ... `]`
 * words: `foo` with no quotes is tokenized to a string, interpreted as a command name in instruction lists
+    * a `:` prefix on a word `:foo` marks it as a variable, equivalent to calling `thing "foo"` in execution
 * quoted strings: `"foo"` or `"foo bar"` (must include closing quote)
+    * may use `\` as an escape character
 * numbers: floating point, pos or neg, exponents ok
 * booleans: use the `true` and `false` operations
 * commands: lists that contain sequences of procedure names as words, quoted and numeric literals, and lists
+* the special form `to` ... `end` in top-level code creates a procedure
+
+## Operators
+
+There are currently no infix operators like `:a + :b` so you must use the equivalent prefix operations like `sum :a :b`. These are intended to be added in a parser rewrite.
+
+## Accessors
 
 Variable and procedure names are "passed by reference" by quoting their names, as in:
 
@@ -108,7 +89,11 @@ make "atari" sum :atari 400
 print :atari
 ```
 
+## Expressions
+
 Executable expressions are themselves lists, in the form of a name for a procedure call (looked up in current or lexical parent scope) and zero or more argument values, which themselves may be the outputs of procedure calls.
+
+Expressions may be wrapped in parentheses to explicitly demarcate argument list boundaries, or they may be implicitly derived from the declared procedure's number of arguments.
 
 For instance this series of instructions:
 
@@ -121,6 +106,73 @@ runs as would the explicitly demarcated form:
 ```
 (output (product :n (factorial (difference :n 1))))
 ```
+
+Since it's unknown before execution whether a procedure call will return a value (an "operation") or not (a "command"), this is checked at runtime after execution. If a return value was expected as input to another call's argument, this will cause an error.
+
+## Blocks
+
+Some commands and operations take "blocks" of code, which are lists of instruction words similar to a procedure body.
+
+For instance the `if` command takes a block to execute if the condition is true:
+
+```
+if equalp :a :b [
+    print "the same"
+]
+```
+
+Currently the blocks are executed in the same scope and context as the function that called the block-using operation to allow local variable access and local `output` and `stop` commands:
+
+```
+forever [
+    dostuff ; may alter vars
+    if greaterp :a :b [
+        print "the same, now exiting"
+        ; We need the value of "a" inside the block
+        output :a
+    ]
+]
+```
+
+The scoping rules may change to more traditional Logo dynamic scope rules where locals are exposed to called procedure scopes.
+
+# Internals
+
+## Execution model
+
+The interpreter and all builtin procedures are implemented as JavaScript `async` functions. Logo commands may thus wait on timers, promises, or other async operations without blocking the event loop.
+
+This also allows control flow to be introspected, visualized, and debugged interactively on the web through a hook system. (Hook system not yet implemented.)
+
+## Lists
+
+Lists are implemented as instances of the `List` class.
+
+Lists are proper singly-linked lists. Each `List` record is either empty, or contains a `head` value. Every record has a `tail` pointer, which is either a non-empty list record or the empty list.
+
+Only one instance of an empty list is allowed, exposed as `List.empty`. Beware that `List.empty.tail === List.empty`. Circular references other than the empty identity are forbidden, and may cause things to break.
+
+Modifying a list record's contents is possible from JS code, but currently not exposed to Logo code. In JS code, forward building of lists (which requires modifying the tail pointers) should be done through the ListBuilder class for convenience.
+
+## Procedures
+
+Procedures ("commands" that don't return a value, and "operations" that do return a value) are represented as JavaScript `async function` objects.
+
+For built-ins implemented in JS, the functions represent themselves; user-defined Logo procedures are wrapped in a closure function which calls back into the interpreter.
+
+The number of arguments exposed in the `length` property is used to determine how many arguments to parse, so be careful about using optional parameters and rest parameters.
+
+Note that for the closure definition, the `length` property must be overridden manually based on the declared arguments in the Logo procedure definition, as the JS anonymous function uses a rest arg.
+
+Whether a procedure returns a value or not affects interpretation of Logo instruction lists, so be consistent! An empty `return` or `return undefined` will be counted as not producing output. Any other value will be returned as output.
+
+## Errors
+
+Error conditions are modeled as JS exceptions. Internal code may throw an exception, and this will cause Logo execution to halt and clean up the stack. It's up to the calling/embedding code to catch and present those exceptions in a useful way.
+
+Currently there is no attempt to make the error messages traditionally Logo-y.
+
+It would be possible to add `throw`/`catch`/`finally` support at the Logo level modeled on UCBLogo, but this has not yet been done.
 
 # Security
 
