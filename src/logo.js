@@ -819,19 +819,19 @@ let builtins = {
     },
 
     // Predicates
-    eq: async function(a, b) {
-        return a === b;
+    equalp: async function(a, b) {
+        return List.equal(a, b);
     },
-    lt: async function(a, b) {
+    lessp: async function(a, b) {
         return a < b;
     },
-    lte: async function(a, b) {
+    lessequalp: async function(a, b) {
         return a <= b;
     },
-    gt: async function(a, b) {
+    greaterp: async function(a, b) {
         return a > b;
     },
-    gte: async function(a, b) {
+    greaterequalp: async function(a, b) {
         return a >= b;
     },
 

@@ -26,12 +26,12 @@ Procedure definitions look something like this:
 to factorial :n
     ; No infix operators currently.
     ; Use the prefix commands for comparisons and arithmetic.
-    if gt :n 1 [
+    if greaterp :n 1 [
         ; Each procedure's argument length is known at
         ; interpretation time, so this is unambiguous.
-        output mul :n factorial sub :n 1
+        output product :n factorial difference :n 1
     ]
-    if eq :n 1 [
+    if equalp :n 1 [
         output 1
     ]
     output 0

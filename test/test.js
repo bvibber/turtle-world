@@ -100,27 +100,56 @@ describe('Logo', function() {
         });
     });
     describe("Standard library", function() {
-        it('should return true for "true"', async function() {
+        // booleans
+        it('should return true for: true', async function() {
             await logoTest("testout true", true);
         });
-        it('should return false for "false"', async function() {
+        it('should return false for: false', async function() {
             await logoTest("testout false", false);
         });
-        it('should return 3 for "sum 1 2"', async function() {
-            await logoTest("testout sum 1 2", 3);
+
+        // math
+        it('should return 5 for: sum 2 3', async function() {
+            await logoTest("testout sum 2 3", 5);
         });
-        it('should return -1 for "sum 1 2"', async function() {
-            await logoTest("testout sum 1 2", 3);
+        it('should return -1 for: difference 2 3', async function() {
+            await logoTest("testout difference 2 3", -1);
+        });
+        it('should return 6 for: product 2 3', async function() {
+            await logoTest("testout product 2 3", 6);
+        });
+        it('should return 2/3 for: quotient 2 3', async function() {
+            await logoTest("testout quotient 2 3", 2/3);
+        });
+
+        // equality
+        it('should return true for: equalp 7 7', async function() {
+            await logoTest(`testout equalp 7 7`, true);
+        });
+        it('should return true for: equalp "7" "7"', async function() {
+            await logoTest(`testout equalp "7" "7"`, true);
+        });
+        it('should return true for: equalp [7] [7]', async function() {
+            await logoTest(`testout equalp [7] [7]`, true);
+        });
+        it('should return false for: equalp 7 23', async function() {
+            await logoTest(`testout equalp 7 23`, false);
+        });
+        it('should return false for: equalp 7 "7"', async function() {
+            await logoTest(`testout equalp 7 "7"`, false);
+        });
+        it('should return false for: equalp [7] ["7"]', async function() {
+            await logoTest(`testout equalp [7] ["7"]`, false);
         });
     });
     describe("Procedure samples", function() {
         it('should return 120 for "factorial 5"', async function() {
             let source = `
             to factorial :n
-                if gt :n 1 [
+                if greaterp :n 1 [
                     output product :n factorial difference :n 1
                 ]
-                if eq :n 1 [
+                if equalp :n 1 [
                     output 1
                 ]
                 output 0
