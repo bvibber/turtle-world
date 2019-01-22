@@ -187,7 +187,7 @@ export class List {
             if (List.empty) {
                 throw new TypeError('Only one empty list may be created');
             }
-            this.head = undefined;
+            this.head = this;
             this.tail = this;
         } else {
             this.head = head;
@@ -199,7 +199,7 @@ export class List {
      * @returns {boolean}
      */
     isEmpty() {
-        return this.head === undefined;
+        return this.head === this.tail;
     }
 
     /**
