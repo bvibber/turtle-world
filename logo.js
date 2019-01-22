@@ -33,7 +33,7 @@ function isString(val) {
     return typeof val === 'string';
 }
 
-let reWord = /^\w[\w\d_-]+/; // ???????????
+let reWord = /^\w[\w\d_-]*/; // ???????????
 function isWord(token) {
     return isString(token) && token.match(reWord);
 }
