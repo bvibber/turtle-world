@@ -95,10 +95,11 @@ Variable and procedure names are "passed by reference" by quoting their names, a
 make "atari" 400
 
 ; prints 400
-print get "atari"
+print thing "atari"
 ```
 
-To get variable values, a shortcut `:` prefix can be used as a shortcut like `get`:
+To get variable values, a shortcut `:` prefix can be used as a shortcut for `thing`:
+
 ```
 ; let's go big
 make "atari" sum :atari 400
@@ -112,12 +113,28 @@ Executable expressions are themselves lists, in the form of a name for a procedu
 For instance this series of instructions:
 
 ```
-output mul :n factorial sub :n 1
+output product :n factorial difference :n 1
 ```
 
 runs as would the explicitly demarcated form:
 
 ```
-(output (mul :n (factorial (sub :n 1))))
+(output (product :n (factorial (difference :n 1))))
 ```
 
+# Security
+
+Logo code may call any JavaScript function that is passed in and bound as a variable value. If you do not wish this to happen, don't give it functions.
+
+There are no limits on memory usage for strings, lists, variable and procedure bindings, etc. It may be possible for Logo code to overuse memory, which may cause a crashed tab or Node process.
+
+It's possible for Logo code to hog the main loop and prevent input, timers etc from running if there are no actual asynchronous operations called during a `repeat` or `forever` loop. Once the hook system is in place, embedders may prevent this by forcing an event-loop bounce with `setTimeout` or `postMessage`.
+
+# Open projects
+
+See [open projects on GitHub](https://github.com/brion/turtle-world/projects/1).
+
+# References
+
+* [Atari Logo reference manual](https://archive.org/details/AtariLOGOReferenceManual)
+* [UCBLogo user manual](https://people.eecs.berkeley.edu/~bh/usermanual)
