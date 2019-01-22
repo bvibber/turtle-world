@@ -885,14 +885,14 @@ let builtins = {
     },
     if: async function(cond, block) {
         if (cond) {
-            await this.evaluate(block);
+            return await this.evaluate(block);
         }
     },
     ifelse: async function(cond, thenBlock, elseBlock) {
         if (cond) {
-            await this.evaluate(block);
+            return await this.evaluate(block);
         } else {
-            await this.evaluate(block);
+            return await this.evaluate(block);
         }
     },
 

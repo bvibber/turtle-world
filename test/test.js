@@ -162,6 +162,20 @@ describe('Logo', function() {
             await logoTest(`testout equalp [7] ["7"]`, false);
         });
     });
+    describe("Blocks and meta-execution", function() {
+        it('should run code inside if true', async function() {
+            await logoTest(`testout "initial" if true [testout "block ran"]`, 'block ran');
+        });
+        it('should not run code inside if false', async function() {
+            await logoTest(`testout "initial" if false [testout "block ran"]`, 'initial');
+        });
+        it('should pass return values from block to if', async function() {
+            await logoTest(`testout if true [sum 1 2]`, 3);
+        });
+        it('should pass literal values from block to if', async function() {
+            await logoTest(`testout if true [3]`, 3);
+        });
+    });
     describe("Procedure samples", function() {
         it('should return 120 for "factorial 5"', async function() {
             let source = `
