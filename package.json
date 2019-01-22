@@ -2,12 +2,11 @@
   "name": "turtle-world",
   "version": "1.0.0",
   "description": "Logo interpreter and turtle graphics environment",
-  "main": "index.js",
+  "main": "lib/logo.js",
   "scripts": {
-    "start": "npx parcel index.html",
-    "build": "npx parcel build --public-url ./ index.html",
-    "clean": "rm -rf dist",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx babel src --out-dir lib",
+    "clean": "rm -rf lib",
+    "test": "npx mocha --require @babel/register"
   },
   "keywords": [
     "logo",
@@ -17,7 +16,12 @@
   "author": "Brion Vibber",
   "license": "ISC",
   "devDependencies": {
-    "parcel-bundler": "^1.11.0"
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.2.2",
+    "@babel/preset-env": "^7.3.1",
+    "@babel/register": "^7.0.0",
+    "mocha": "^5.2.0"
   },
-  "browserslist": "> 5%, not IE 11"
+  "browserslist": "> 5%, not IE 11",
+  "dependencies": {}
 }

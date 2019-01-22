@@ -305,6 +305,19 @@ export class List {
         return end;
     }
 
+    static equal(a, b) {
+        if (a === b) {
+            return true;
+        }
+        if (!isList(a) || !isList(b)) {
+            return false;
+        }
+        if (!List.equal(a.head, b.head)) {
+            return false;
+        }
+        return List.equal(a.tail, b.tail);
+    }
+
     /**
      * Create a List from another list, JS array, or other iterable.
      *
