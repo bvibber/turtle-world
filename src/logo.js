@@ -1145,8 +1145,8 @@ export class Interpreter {
             },
             numberSign: (char) => {
                 if (char.match(reDigit)) {
-                    token += reDigit;
-                    return 'numberSign';
+                    token += char;
+                    return 'numberDigit';
                 }
             },
             numberDigit: (char) => {
@@ -1157,6 +1157,10 @@ export class Interpreter {
                 if (char.match(reSpace)) {
                     tokens.push(token);
                     return 'start';
+                }
+                if (char.match(reDigit)) {
+                    token += char;
+                    return 'numberDigit';
                 }
                 if (char.match(reDot)) {
                     token += char;
