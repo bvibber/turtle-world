@@ -199,7 +199,7 @@ export class List {
      * @returns {boolean}
      */
     isEmpty() {
-        return this.head === this.tail;
+        return this === List.empty;
     }
 
     /**

@@ -99,6 +99,26 @@ describe('Logo', function() {
             await logoTest("testout [1 2]", List.of(1, 2));
         });
     });
+    describe("Accessors", function() {
+        it('should throw on : get of undefined variable', async function() {
+            await logoTry(`testout :n`, ReferenceError);
+        });
+        it('should throw on thing get of undefined variable', async function() {
+            await logoTry(`testout thing "n"`, ReferenceError);
+        });
+        it('should throw on thing get of int', async function() {
+            await logoTry(`testout thing 32`, TypeError);
+        });
+        it('should throw on thing get of list', async function() {
+            await logoTry(`testout thing []`, TypeError);
+        });
+        it('should work on : get of defined variable', async function() {
+            await logoTest(`make "n" 32 testout :n`, 32);
+        });
+        it('should work on thing get of defined variable', async function() {
+            await logoTest(`make "n" 32 testout thing "n"`, 32);
+        });
+    });
     describe("Standard library", function() {
         // booleans
         it('should return true for: true', async function() {
