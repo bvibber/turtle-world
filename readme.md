@@ -4,6 +4,8 @@ Turtle World is a Logo interpreter and turtle graphics environment for the web.
 
 **TURTLE WORLD IS INCOMPLETE. USE AT YOUR OWN RISK.**
 
+See [on-web demo page](https://brionv.com/misc/turtle-world/) to try it out so far.
+
 It is intended for use in interactive programming theory demos on the web. Currently it is more or less functional but incomplete. Needs cleanup in the engine, parser, and standard library, and to have hooks added to support interactive program flow visualization and debugging.
 
 Currently it requires an ES2017-level browser engine with support for `async`/`await`, but does not require native modules using the bundling via ParcelJS. It can probably be transpiled to support ES5 (IE 11) but this is not currently a priority.
