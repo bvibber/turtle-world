@@ -1463,6 +1463,9 @@ export class Interpreter {
                     throw new SyntaxError('End of input expecting variadic arg');
                 }
                 if (value === ')') {
+                    if (args.length < func.length) {
+                        throw new SyntaxError('Not enough args to call ' + func.name);
+                    }
                     return await func.apply(interpreter, args);
                 }
                 await handleArg(args, value);

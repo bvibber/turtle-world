@@ -2,21 +2,78 @@ import {List, Interpreter} from '../src/logo.js';
 
 let assert = require('assert');
 
-async function logoTest(input, output) {
+async function logoRun(input, globals={}) {
     let logo = new Interpreter();
     let retval;
+    logo.globalScope.bindValues(globals);
     logo.globalScope.bindValues({
         testout: async function(arg) {
             retval = arg;
         }
     });
     await logo.execute(input);
+    return retval;
+}
+
+async function logoTest(input, output, globals={}) {
+    let retval = await logoRun(input, globals);
     assert.ok(List.equal(retval, output),
         "expected " + String(output) + " but got " + String(retval));
 }
 
+async function logoTry(input, errorType, globals={}) {
+    let retval;
+    try {
+        retval = await logoRun(input, globals);
+    } catch (e) {
+        assert.ok(e instanceof errorType, "expected " + errorType.name + " but threw " + e);
+        return;
+    }
+    assert.ok(false, "expected " + errorType.name + " but got " + String(retval));
+}
+
 describe('Logo', function() {
     describe('#execute()', function() {
+        it('should throw given a value with no command', async function() {
+            await logoTry("32", SyntaxError);
+        });
+
+        it('should work given a command with no args', async function() {
+            await logoTest("testcmd", undefined, {
+                testcmd: async function() {}
+            });
+        });
+        it('should work given a command with one arg', async function() {
+            await logoTest("testcmd 1", undefined, {
+                testcmd: async function(arg) {}
+            });
+        });
+        it('should throw given too few args', async function() {
+            await logoTry("testcmd", SyntaxError, {
+                testcmd: async function(arg) {}
+            });
+        });
+        it('should throw given too many args', async function() {
+            await logoTry("testcmd 1 2", SyntaxError, {
+                testcmd: async function(arg) {}
+            });
+        });
+        it('should throw given too few args in parens', async function() {
+            await logoTry("(testcmd)", SyntaxError, {
+                testcmd: async function(arg) {}
+            });
+        });
+        it('should work given expected args in parens', async function() {
+            await logoTest("(testcmd 1)", undefined, {
+                testcmd: async function(arg) {}
+            });
+        });
+        it('should work given extra args in parens', async function() {
+            await logoTest("(testcmd 1 2)", undefined, {
+                testcmd: async function(arg) {}
+            });
+        });
+
         it('should return 32 for "32"', async function() {
             await logoTest("testout 32", 32);
         });
