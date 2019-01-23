@@ -2,7 +2,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
+    right: 50%;
     bottom: 240px;
     text-align: center;
 }
@@ -16,13 +16,21 @@
     height: 100%;
     object-fit: contain;
 }
+#logo-debug {
+    background-color: #eff;
+    position: absolute;
+    bottom: 0;
+    height: 240px;
+    left: 0;
+    right: 50%;
+}
 #logo-console {
     background-color: lightgrey;
     position: absolute;
-    left: 0;
-    right: 50%;
-    bottom: 0;
-    height: 240px;
+    left: 50%;
+    right: 0;
+    top: 0;
+    bottom: 240px;
     overflow-y: scroll;
 }
 #logo-input {
@@ -31,11 +39,21 @@
     width: 50%;
     bottom: 40px;
     height: 200px;
+    border: none;
 }
 #logo-run {
     position: absolute;
+    left: 50%;
+    right: 75%;
+    width: 25%;
+    bottom: 0;
+    height: 40px;
+}
+#logo-stop {
+    position: absolute;
+    left: 75%;
     right: 0;
-    width: 50%;
+    width: 25%;
     bottom: 0;
     height: 40px;
 }

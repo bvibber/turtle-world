@@ -14,6 +14,7 @@ let el = document.getElementById('logo-display');
 let elConsole = document.getElementById('logo-console');
 let elInput = document.getElementById('logo-input');
 let elRun = document.getElementById('logo-run');
+let elStop = document.getElementById('logo-stop');
 
 let turtle = new TurtleGraphics(el, 640, 480);
 let logo = new Interpreter();
@@ -31,17 +32,26 @@ elRun.addEventListener('click', function(event) {
     let source = elInput.value;
     elRun.disabled = true;
     elInput.disabled = true;
+    elStop.disabled = false;
     print('input', source);
     logo.execute(source)
         .then(() => {
             elInput.disabled = false;
             elRun.disabled = false;
+            elStop.disabled = true;
         }).catch((e) => {
             console.log(e);
             print('error', e);
-            elRun.disabled = false;
             elInput.disabled = false;
+            elRun.disabled = false;
+            elStop.disabled = true;
         });
+});
+
+elStop.addEventListener('click', function(event) {
+    // This will cause an exception to throw
+    // on the original promise.
+    logo.break();
 });
 
 let api = {

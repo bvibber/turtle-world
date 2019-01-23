@@ -746,9 +746,14 @@ let builtins = {
     wait: function(frames) {
         return new Promise((resolve, reject) => {
             let ms = (1000 * frames) / 60;
-            setTimeout(() => {
+            let id = setTimeout(() => {
+                this.onbreak = null;
                 resolve();
             }, ms);
+            this.onbreak = (reason) => {
+                clearTimeout(id);
+                reject(reason);
+            };
         });
     },
 
@@ -786,7 +791,7 @@ let builtins = {
      */
     call: async function(func, ...args) {
         if (typeof func === 'function') {
-            return await func.apply(this, args);
+            return await this.performCall(func, args);
         }
     },
 
@@ -947,6 +952,14 @@ export class Interpreter {
         this.globalContext = new Context();
         this.scopes = [this.globalScope];
         this.contexts = [this.globalContext];
+
+        // Set to true during program execution.
+        this.running = false;
+        this.breakFlag = false;
+
+        // Callback for cancelable async operations
+        // exposed through commands.
+        this.onbreak = null;
     }
 
     currentContext() {
@@ -1360,6 +1373,21 @@ export class Interpreter {
         return parsed.list;
     }
 
+    /**
+     * Check the break flag and perform a procedure call.
+     * This operation will be observable asynchronously
+     * sometime in the future.
+     *
+     * @param {function} func 
+     * @param {array} args 
+     */
+    async performCall(func, args) {
+        if (this.breakFlag) {
+            throw new Error('Break requested');
+        }
+        return await func.apply(this, args);
+    }
+
     async runTemplate(template, args) {
         if (isString(template)) {
             // word -> command
@@ -1368,7 +1396,7 @@ export class Interpreter {
                 throw new ReferenceError('Unbound template command ' + template);
             }
             let func = binding.value;
-            return await func.apply(this, args);
+            return await this.performCall(func, args);
         }
 
         if (!isList(template)) {
@@ -1473,7 +1501,7 @@ export class Interpreter {
                     if (args.length < func.length) {
                         throw new SyntaxError('Not enough args to call ' + func.name);
                     }
-                    return await func.apply(interpreter, args);
+                    return await interpreter.performCall(func, args);
                 }
                 let retval = await handleArg(value);
                 if (retval === undefined) {
@@ -1490,7 +1518,7 @@ export class Interpreter {
             let args = [];
             while (!context.stop) {
                 if (args.length >= func.length) {
-                    return await func.apply(interpreter, args);
+                    return await interpreter.performCall(func, args);
                 }
                 let {value, done} = iter.next();
                 if (done) {
@@ -1531,11 +1559,46 @@ export class Interpreter {
 
     // Parse and execute a string in the global context
     async execute(source) {
+        if (this.running) {
+            // @todo allow pushing it onto a task list
+            throw new Error('Logo code is already running');
+        }
         let tokens = this.tokenize(source);
         let parsed = this.parse(tokens);
-        let retval = await this.evaluate(parsed);
-        if (retval !== undefined) {
-            throw new SyntaxError('Unhandled output value ' + String(retval));
+        this.running = true;
+        try {
+            let retval = await this.evaluate(parsed);
+            if (retval !== undefined) {
+                throw new SyntaxError('Unhandled output value ' + String(retval));
+            }
+        } finally {
+            // Clean up flags
+            this.breakFlag = false;
+            this.running = false;
+        }
+    }
+
+    /**
+     * Request a user break of any currently running code.
+     * Will throw an exception within the interpreter loop.
+     */
+    break() {
+        if (!this.running) {
+            return;
+        }
+        if (this.breakFlag) {
+            return;
+        }
+
+        // Interpreter loop will check this flag and break
+        // out with an internal exception.
+        this.breakFlag = true;
+
+        if (this.onbreak) {
+            // Async operations may set this callback
+            // so we can interrupt them, such as clearing
+            // a long-running timeout.
+            this.onbreak(new Error('Break requested'));
         }
     }
 }
