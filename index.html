@@ -14,9 +14,10 @@
 cs up seth 0 setpos [0 0]
 
 up back 100 right 10 down
+make "n" 1
 repeat 18 [
-    ; 'repeat' takes a block of additional
-    ; instructions that run in the same context
+    color item :n [black blue green red]
+    make "n" sum modulo :n 4 1
     forward 200 right 10 back 200 right 10
 ]
 

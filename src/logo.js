@@ -701,7 +701,7 @@ let builtins = {
         throw new TypeError('butlast requires a list or string');
     },
     item: async function(index, thing) {
-        if (isNumber(index)) {
+        if (!isNumber(index)) {
             throw new TypeError('index must be a number');
         }
         if (index < 0) {
@@ -712,12 +712,12 @@ let builtins = {
         }
         if (isString(thing)) {
             if (index > thing.length) {
-                throw new TypeError('index is beyont string length');
+                throw new TypeError('index is beyond string length');
             }
             return thing[index];
         }
         if (isList(thing)) {
-            let n = 0;
+            let n = 1;
             for (let item of thing) {
                 if (n === index) {
                     return item;

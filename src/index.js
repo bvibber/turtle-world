@@ -114,7 +114,7 @@ let api = {
         turtle.down();
     },
     color: async function(color) {
-        turtle.color('' + color);
+        turtle.setColor('' + color);
     },
 };
 logo.globalScope.bindValues(api);

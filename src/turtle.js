@@ -47,6 +47,7 @@
             let ctx = this._ctx;
             ctx.beginPath();
             ctx.strokeStyle = this.color;
+            console.log(this.color);
 
             // Center and flip the Y coordinate.
             ctx.moveTo(oldX + this.width / 2, this.height / 2 - oldY);
@@ -83,7 +84,7 @@
         this.penDown = true;
     }
 
-    color(str) {
+    setColor(str) {
         this.color = '' + str;
     }
 }

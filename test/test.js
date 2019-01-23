@@ -161,6 +161,17 @@ describe('Logo', function() {
         it('should return false for: equalp [7] ["7"]', async function() {
             await logoTest(`testout equalp [7] ["7"]`, false);
         });
+
+        // item selection
+        it('should return first item for item 1', async function() {
+            await logoTest(`testout item 1 [a]`, "a");
+        });
+        it('should return first item for item 1 of 2', async function() {
+            await logoTest(`testout item 1 [a b]`, "a");
+        });
+        it('should return second item for item 2 of 2', async function() {
+            await logoTest(`testout item 2 [a b]`, "b");
+        });
     });
     describe("Blocks and meta-execution", function() {
         it('should run code inside if true', async function() {
