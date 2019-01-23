@@ -15,7 +15,8 @@ let elConsole = document.getElementById('logo-console');
 let elDebug = document.getElementById('logo-debug');
 let elInput = document.getElementById('logo-input');
 let elRun = document.getElementById('logo-run');
-let elStop = document.getElementById('logo-stop');
+let elPause = document.getElementById('logo-pause');
+let elBreak = document.getElementById('logo-break');
 
 let turtle = new TurtleGraphics(el, 640, 480);
 let logo = new Interpreter();
@@ -33,23 +34,41 @@ elRun.addEventListener('click', function(event) {
     let source = elInput.value;
     elRun.disabled = true;
     elInput.disabled = true;
-    elStop.disabled = false;
+    elPause.disabled = false;
+    elBreak.disabled = false;
+    elPause.textContent = 'Pause';
     print('input', source);
     logo.execute(source)
         .then(() => {
             elInput.disabled = false;
             elRun.disabled = false;
-            elStop.disabled = true;
+            elPause.disabled = true;
+            elBreak.disabled = true;
+            elPause.textContent = 'Pause';
         }).catch((e) => {
             console.log(e);
             print('error', e);
             elInput.disabled = false;
             elRun.disabled = false;
-            elStop.disabled = true;
+            elPause.disabled = true;
+            elBreak.disabled = true;
+            elPause.textContent = 'Pause';
         });
 });
 
-elStop.addEventListener('click', function(event) {
+elPause.addEventListener('click', function(event) {
+    // This will cause our observer to delay
+    // arbitrarily long on the next instruction.
+    if (logo.paused) {
+        this.textContent = 'Pause';
+        logo.continue();
+    } else {
+        this.textContent = 'Continue';
+        logo.pause();
+    }
+});
+
+elBreak.addEventListener('click', function(event) {
     // This will cause an exception to throw
     // on the original promise.
     logo.break();
@@ -136,12 +155,12 @@ async function delay(ms) {
 logo.oncall = async function(func, args, body, node) {
     // warning: template command calls won't have a body/node currently
     updateBody(body, node);
-    await delay(50);
+    await delay(0);
 };
 
 logo.onvalue = async function(val, body, node) {
     updateBody(body, node);
-    await delay(50);
+    await delay(0);
 };
 
 function node2html(node, map) {

@@ -956,10 +956,12 @@ export class Interpreter {
         // Set to true during program execution.
         this.running = false;
         this.breakFlag = false;
+        this.paused = false;
 
         // Sync callback for cancelable async operations
         // exposed through commands.
         this.onbreak = null;
+        this.oncontinue = null;
 
         // Async callback for Logo code evaluation.
         // Is called with the body, current node, and
@@ -1391,9 +1393,7 @@ export class Interpreter {
      * @param {array} args 
      */
     async performCall(func, args, body=undefined, node=undefined) {
-        if (this.breakFlag) {
-            throw new Error('Break requested');
-        }
+        await this.checkBreak();
         if (this.oncall) {
             await this.oncall(func, args, body, node);
         }
@@ -1615,15 +1615,59 @@ export class Interpreter {
     }
 
     /**
+     * Checks for breaks and pauses
+     * Async, as may delay during a pause.
+     */
+    checkBreak() {
+        return new Promise((resolve, reject) => {
+            if (this.breakFlag) {
+                throw new Error('Break requested');
+            }
+            if (this.paused) {
+                this.oncontinue = () => {
+                    resolve();
+                };
+                this.onbreak = (reason) => {
+                    this.oncontinue = null;
+                    reject(reason);
+                };
+            } else {
+                resolve();
+            }
+        });
+    }
+
+    pause() {
+        if (!this.running) {
+            throw new Error('Cannot pause when not running');
+        }
+        if (this.paused) {
+            throw new Error('Already paused');
+        }
+        this.paused = true;
+    }
+
+    continue() {
+        if (!this.running) {
+            throw new Error('Cannot continue when not running');
+        }
+        if (!this.paused) {
+            throw new Error('Cannot continue when not paused');
+        }
+        this.paused = false;
+        this.oncontinue();
+    }
+
+    /**
      * Request a user break of any currently running code.
      * Will throw an exception within the interpreter loop.
      */
     break() {
         if (!this.running) {
-            return;
+            throw new Error('Cannot break when not running');
         }
         if (this.breakFlag) {
-            return;
+            throw new Error('Already breaking');
         }
 
         // Interpreter loop will check this flag and break
@@ -1635,6 +1679,10 @@ export class Interpreter {
             // so we can interrupt them, such as clearing
             // a long-running timeout.
             this.onbreak(new Error('Break requested'));
+        }
+
+        if (this.paused) {
+            this.continue();
         }
     }
 }

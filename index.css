@@ -49,11 +49,19 @@
     bottom: 0;
     height: 40px;
 }
-#logo-stop {
+#logo-pause {
     position: absolute;
     left: 75%;
+    right: 12.55;
+    width: 12.5%;
+    bottom: 0;
+    height: 40px;
+}
+#logo-break {
+    position: absolute;
+    left: 87.25%;
     right: 0;
-    width: 25%;
+    width: 12.5%;
     bottom: 0;
     height: 40px;
 }
@@ -75,4 +83,8 @@
 #logo-debug span.active {
     color: blue;
     background-color: #bff;
+}
+
+button[disabled] {
+    background: #888;
 }
