@@ -743,6 +743,15 @@ let builtins = {
         }));
     },
 
+    wait: function(frames) {
+        return new Promise((resolve, reject) => {
+            let ms = (1000 * frames) / 60;
+            setTimeout(() => {
+                resolve();
+            }, ms);
+        });
+    },
+
     // Value get/set
 
     thing: async function(name) {
