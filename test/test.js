@@ -175,6 +175,9 @@ describe('Logo', function() {
         it('should pass literal values from block to if', async function() {
             await logoTest(`testout if true [3]`, 3);
         });
+        it('should throw on a block with multiple operations/literals', async function() {
+            await logoTry(`testout if true [1 2 3]`, SyntaxError);
+        });
     });
     describe("Procedure samples", function() {
         it('should return 120 for "factorial 5"', async function() {

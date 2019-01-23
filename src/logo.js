@@ -1496,8 +1496,14 @@ export class Interpreter {
             return undefined;
         }
 
-        while (!context.stop && retval === undefined) {
+        while (!context.stop) {
             let {value, done} = iter.next();
+            if (retval !== undefined) {
+                if (done) {
+                    return retval;
+                }
+                throw new SyntaxError('Extra instructions after a value-returning expression: ' + value);
+            }
             if (done) {
                 break;
             }
