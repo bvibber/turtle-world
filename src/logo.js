@@ -957,9 +957,17 @@ export class Interpreter {
         this.running = false;
         this.breakFlag = false;
 
-        // Callback for cancelable async operations
+        // Sync callback for cancelable async operations
         // exposed through commands.
         this.onbreak = null;
+
+        // Async callback for Logo code evaluation.
+        // Is called with the body, current node, and
+        // argument values on every command or operation
+        // call.
+        //
+        // Code can trace, or even delay execution.
+        this.oncall = null;
     }
 
     currentContext() {
@@ -1381,9 +1389,12 @@ export class Interpreter {
      * @param {function} func 
      * @param {array} args 
      */
-    async performCall(func, args) {
+    async performCall(func, args, body=undefined, node=undefined) {
         if (this.breakFlag) {
             throw new Error('Break requested');
+        }
+        if (this.oncall) {
+            await this.oncall(func, args, body, node);
         }
         return await func.apply(this, args);
     }
@@ -1494,7 +1505,8 @@ export class Interpreter {
                 throw new SyntaxError('End of input expecting variadic command');
             }
 
-            let command = iter.head;
+            let node = iter;
+            let command = node.head;
             let func = validateCommand(command);
             let args = [];
             iter = iter.tail;
@@ -1507,7 +1519,7 @@ export class Interpreter {
                         throw new SyntaxError('Not enough args to call ' + func.name);
                     }
                     iter = iter.tail;
-                    return await interpreter.performCall(func, args);
+                    return await interpreter.performCall(func, args, body, node);
                 }
                 let retval = await handleArg(iter.head);
                 if (retval === undefined) {
@@ -1520,13 +1532,14 @@ export class Interpreter {
 
         async function handleFixed() {
             // Fixed-length command
-            let command = iter.head;
+            let node = iter;
+            let command = node.head;
             let func = validateCommand(command);
             let args = [];
             iter = iter.tail;
             while (!context.stop) {
                 if (args.length >= func.length) {
-                    return await interpreter.performCall(func, args);
+                    return await interpreter.performCall(func, args, body, node);
                 }
                 if (iter.isEmpty()) {
                     throw new SyntaxError('End of input expecting fixed arg');

@@ -68,3 +68,11 @@
     background-color: white;
     color: black;
 }
+
+#logo-debug span {
+    color: black;
+}
+#logo-debug span.active {
+    color: blue;
+    background-color: #bff;
+}
