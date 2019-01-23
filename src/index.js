@@ -117,22 +117,31 @@ let api = {
         turtle.setColor('' + color);
     },
 };
+
 logo.globalScope.bindValues(api);
-logo.oncall = async function(func, args, body, node) {
-    // warning: template command calls won't have a body/node currently
 
-    updateBody(body, node);
-
+async function delay(ms) {
     await new Promise((resolve, reject) => {
         let id = setTimeout(() => {
             logo.onbreak = null;
             resolve();
-        }, 100);
+        }, ms);
         logo.onbreak = (reason) => {
             clearTimeout(id);
             reject(reason);
         };
     });
+}
+
+logo.oncall = async function(func, args, body, node) {
+    // warning: template command calls won't have a body/node currently
+    updateBody(body, node);
+    await delay(50);
+};
+
+logo.onvalue = async function(val, body, node) {
+    updateBody(body, node);
+    await delay(50);
 };
 
 function node2html(node, map) {

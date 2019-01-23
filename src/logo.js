@@ -968,6 +968,7 @@ export class Interpreter {
         //
         // Code can trace, or even delay execution.
         this.oncall = null;
+        this.onvalue = null;
     }
 
     currentContext() {
@@ -1396,7 +1397,11 @@ export class Interpreter {
         if (this.oncall) {
             await this.oncall(func, args, body, node);
         }
-        return await func.apply(this, args);
+        let retval = await func.apply(this, args);
+        if (retval !== undefined && this.onvalue) {
+            await this.onvalue(retval, body, node);
+        }
+        return retval;
     }
 
     async runTemplate(template, args) {
@@ -1464,23 +1469,35 @@ export class Interpreter {
             return func;
         }
 
-        function handleLiteral() {
+        async function handleLiteral() {
+            let node = iter;
             let value = iter.head;
             iter = iter.tail;
             if (isList(value) || isBoolean(value) || isNumber(value)) {
+                if (interpreter.onvalue) {
+                    await interpreter.onvalue(value, body, node);
+                }
                 return value;
             }
             if (!isString(value)) {
                 throw new SyntaxError('Unexpected token ' + value);
             }
             let first = value[0];
+            let rest = value.substr(1);
             if (first === '"') {
                 // String literal
+                if (interpreter.onvalue) {
+                    await interpreter.onvalue(rest, body, node);
+                }
                 return value.substr(1);
             }
             if (first === ':') {
                 // Variable get
-                return scope.get(value.substr(1));
+                let val = scope.get(rest);
+                if (interpreter.onvalue) {
+                    await interpreter.onvalue(val, body, node);
+                }
+                return val;
             }
             throw new SyntaxError('Unexpected token ' + value);
         }
@@ -1493,7 +1510,7 @@ export class Interpreter {
             if (isWord(iter.head)) {
                 return await handleFixed();
             }
-            return handleLiteral();
+            return await handleLiteral();
         }
 
         async function handleVariadic() {
@@ -1571,7 +1588,7 @@ export class Interpreter {
                 retval = await handleFixed();
                 continue;
             }
-            retval = handleLiteral();
+            retval = await handleLiteral();
         }
         return retval;
     }
