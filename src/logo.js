@@ -642,7 +642,7 @@ let builtins = {
             return arg[0];
         }
         if (isList(arg)) {
-            if (list.isEmpty()) {
+            if (arg.isEmpty()) {
                 throw new TypeError('empty list');
             }
             return arg.head;
@@ -673,11 +673,11 @@ let builtins = {
             return arg.substr(1);
         }
         if (isList(arg)) {
-            if (list.hasTail()) {
-                // Fast split of immutable list tail!
-                return list.tail;
+            if (arg.isEmpty()) {
+                throw new TypeError('empty list');
             } else {
-                return List.empty;
+                // Fast split of immutable list tail!
+                return arg.tail;
             }
         }
         throw new TypeError('must be a string or list');
@@ -1051,7 +1051,8 @@ export class Interpreter {
         const reColon = /^:/;
         const reQuote = /^"/;
         const reBackslash = /^\\/;
-        const reWord = /^\w/;
+        const reWordStart = /^[\w_]/;
+        const reWord = /^[\w_-]/;
         const reDigit = /^[0-9]/;
         const reDot = /^\./;
         const reExponent = /^e/;
@@ -1090,7 +1091,7 @@ export class Interpreter {
                     token = char;
                     return 'word';
                 }
-                if (char.match(reWord)) {
+                if (char.match(reWordStart)) {
                     token = char;
                     return 'word';
                 }

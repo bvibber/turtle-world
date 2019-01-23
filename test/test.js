@@ -206,5 +206,41 @@ describe('Logo', function() {
             `;
             await logoTest(source, 120);
         });
+        it('should return no output and no error for 12 days of xmas', async function() {
+            let source = `
+            to day_of_xmas :day
+                (print "On day" :day "of X-mas, my true love gave to me")
+                make "gifts" reverse [
+                    [partridge in a pear tree]
+                    [turtle doves]
+                    [French hens]
+                    [calling birds]
+                    [gold rings]
+                    [geese a-laying]
+                    [swans a-swimming]
+                    [maids a-milking]
+                    [ladies dancing]
+                    [lords a-leaping]
+                    [pipers piping]
+                    [drummers drumming]
+                ]
+                make "n" 12
+                repeat 12 [
+                    if lessp :n sum :day 1 [
+                    (print :n first :gifts)
+                    ]
+                    make "gifts" butfirst :gifts
+                    make "n" difference :n 1
+                ]
+            end
+
+            make "day" 1
+            repeat 12 [
+                day_of_xmas :day
+                make "day" sum :day 1
+            ]
+            `;
+            await logoTest(source, undefined);
+        });
     });
 });
