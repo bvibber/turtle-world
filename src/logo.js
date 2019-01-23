@@ -1417,10 +1417,9 @@ export class Interpreter {
 
         let iter = body[Symbol.iterator]();
 
-        async function handleArg(args, value) {
+        function handleLiteral(value) {
             if (isList(value) || isBoolean(value) || isNumber(value)) {
-                args.push(value);
-                return;
+                return value;
             }
             if (!isString(value)) {
                 throw new SyntaxError('Unexpected token ' + value);
@@ -1428,29 +1427,24 @@ export class Interpreter {
             let first = value[0];
             if (first === '"') {
                 // String literal
-                args.push(value.substr(1));
-                return;
+                return value.substr(1);
             }
             if (first === ':') {
                 // Variable get
-                args.push(scope.get(value.substr(1)));
-                return;
+                return scope.get(value.substr(1));
             }
+            throw new SyntaxError('Unexpected token ' + value);
+        }
+
+        async function handleArg(value) {
             if (value === '(') {
                 // Variadic command
-                let retval = await handleVariadic();
-                if (retval !== undefined) {
-                    args.push(retval);
-                }
-                return;
+                return await handleVariadic();
             }
             if (isWord(value)) {
-                let retval = await handleFixed(value);
-                if (retval !== undefined) {
-                    args.push(retval);
-                }
-                return;
+                return await handleFixed(value);
             }
+            return handleLiteral(value);
         }
 
         async function handleVariadic() {
@@ -1472,7 +1466,11 @@ export class Interpreter {
                     }
                     return await func.apply(interpreter, args);
                 }
-                await handleArg(args, value);
+                let retval = await handleArg(value);
+                if (retval === undefined) {
+                    throw new SyntaxError('Expected output from arg to ' + func.name);
+                }
+                args.push(retval);
             }
             return undefined;
         }
@@ -1489,12 +1487,16 @@ export class Interpreter {
                 if (done) {
                     throw new SyntaxError('End of input expecting fixed arg');
                 }
-                await handleArg(args, value);
+                let retval = await handleArg(value);
+                if (retval === undefined) {
+                    throw new SyntaxError('Expected output from arg to ' + func.name);
+                }
+                args.push(retval);
             }
             return undefined;
         }
 
-        while (!context.stop) {
+        while (!context.stop && retval === undefined) {
             let {value, done} = iter.next();
             if (done) {
                 break;
@@ -1507,7 +1509,7 @@ export class Interpreter {
                 retval = await handleFixed(value);
                 continue;
             }
-            throw new SyntaxError('Unexpected token ' + value);
+            retval = handleLiteral(value);
         }
         return retval;
     }
@@ -1516,6 +1518,9 @@ export class Interpreter {
     async execute(source) {
         let tokens = this.tokenize(source);
         let parsed = this.parse(tokens);
-        return await this.evaluate(parsed);
+        let retval = await this.evaluate(parsed);
+        if (retval !== undefined) {
+            throw new SyntaxError('Unhandled output value ' + String(retval));
+        }
     }
 }
