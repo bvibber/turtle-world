@@ -1439,6 +1439,7 @@ export class Interpreter {
         let scope = this.currentScope();
         let context = this.currentContext();
         let retval;
+        let iter = body;
 
         function validateCommand(command) {
             if (!isWord(command)) {
@@ -1452,9 +1453,9 @@ export class Interpreter {
             return func;
         }
 
-        let iter = body[Symbol.iterator]();
-
-        function handleLiteral(value) {
+        function handleLiteral() {
+            let value = iter.head;
+            iter = iter.tail;
             if (isList(value) || isBoolean(value) || isNumber(value)) {
                 return value;
             }
@@ -1473,37 +1474,42 @@ export class Interpreter {
             throw new SyntaxError('Unexpected token ' + value);
         }
 
-        async function handleArg(value) {
-            if (value === '(') {
+        async function handleArg() {
+            if (iter.head === '(') {
                 // Variadic command
                 return await handleVariadic();
             }
-            if (isWord(value)) {
-                return await handleFixed(value);
+            if (isWord(iter.head)) {
+                return await handleFixed();
             }
-            return handleLiteral(value);
+            return handleLiteral();
         }
 
         async function handleVariadic() {
+            // Consume the "("
+            iter = iter.tail;
+
             // Variadic command
-            let {value, done} = iter.next();
-            if (done) {
+            if (iter.isEmpty()) {
                 throw new SyntaxError('End of input expecting variadic command');
             }
-            let func = validateCommand(value);
+
+            let command = iter.head;
+            let func = validateCommand(command);
             let args = [];
+            iter = iter.tail;
             while (!context.stop) {
-                let {value, done} = iter.next();
-                if (done) {
+                if (iter.isEmpty()) {
                     throw new SyntaxError('End of input expecting variadic arg');
                 }
-                if (value === ')') {
+                if (iter.head === ')') {
                     if (args.length < func.length) {
                         throw new SyntaxError('Not enough args to call ' + func.name);
                     }
+                    iter = iter.tail;
                     return await interpreter.performCall(func, args);
                 }
-                let retval = await handleArg(value);
+                let retval = await handleArg(iter.head);
                 if (retval === undefined) {
                     throw new SyntaxError('Expected output from arg to ' + func.name);
                 }
@@ -1512,19 +1518,20 @@ export class Interpreter {
             return undefined;
         }
 
-        async function handleFixed(command) {
+        async function handleFixed() {
             // Fixed-length command
+            let command = iter.head;
             let func = validateCommand(command);
             let args = [];
+            iter = iter.tail;
             while (!context.stop) {
                 if (args.length >= func.length) {
                     return await interpreter.performCall(func, args);
                 }
-                let {value, done} = iter.next();
-                if (done) {
+                if (iter.isEmpty()) {
                     throw new SyntaxError('End of input expecting fixed arg');
                 }
-                let retval = await handleArg(value);
+                let retval = await handleArg(iter.head);
                 if (retval === undefined) {
                     throw new SyntaxError('Expected output from arg to ' + func.name);
                 }
@@ -1534,25 +1541,24 @@ export class Interpreter {
         }
 
         while (!context.stop) {
-            let {value, done} = iter.next();
             if (retval !== undefined) {
-                if (done) {
+                if (iter.isEmpty()) {
                     return retval;
                 }
-                throw new SyntaxError('Extra instructions after a value-returning expression: ' + value);
+                throw new SyntaxError('Extra instructions after a value-returning expression: ' + iter.head);
             }
-            if (done) {
+            if (iter.isEmpty()) {
                 break;
             }
-            if (value === '(') {
+            if (iter.head === '(') {
                 retval = await handleVariadic();
                 continue;
             }
-            if (isWord(value)) {
-                retval = await handleFixed(value);
+            if (isWord(iter.head)) {
+                retval = await handleFixed();
                 continue;
             }
-            retval = handleLiteral(value);
+            retval = handleLiteral();
         }
         return retval;
     }
