@@ -952,6 +952,7 @@ export class Interpreter {
         this.globalContext = new Context();
         this.scopes = [this.globalScope];
         this.contexts = [this.globalContext];
+        this.sourceMap = new WeakMap();
 
         // Set to true during program execution.
         this.running = false;
@@ -1044,345 +1045,219 @@ export class Interpreter {
         return func;
     }
 
-    tokenize(str) {
-        const reSemicolon = /^;/;
-        const reSpace = /^[ \t\n\r]/;
-        const reNewline = /^[\n\r]/;
-        const reColon = /^:/;
-        const reQuote = /^"/;
-        const reBackslash = /^\\/;
-        const reWordStart = /^[\w_]/;
-        const reWord = /^[\w_-]/;
-        const reDigit = /^[0-9]/;
-        const reDot = /^\./;
-        const reExponent = /^e/;
-        const reSign = /^[-\+]/;
-        const reOpenParen = /^\(/;
-        const reCloseParen = /^\)/;
-        const reOpenBracket = /^\[/;
-        const reCloseBracket = /^\]/;
-
-        // sigils
-        let tokens = new ListBuilder();
-        let token;
-
-        let machine = new StateMachine({
-            start: (char) => {
-                if (!char) {
-                    return 'end';
-                }
-                if (char.match(reSpace)) {
-                    return 'start';
-                }
-                if (char.match(reSemicolon)) {
-                    return 'comment';
-                }
-                if (char.match(reQuote)) {
-                    // "foo" surrounds a string.
-                    // note the token value is de-escaped
-                    // and contains only an initial quote
-                    // like this: "foo
-                    token = char;
-                    return 'string';
-                }
-                if (char.match(reColon)) {
-                    // :foo is a shortcut for 'get foo'
-                    // so it may prefix a word.
-                    token = char;
-                    return 'word';
-                }
-                if (char.match(reWordStart)) {
-                    token = char;
-                    return 'word';
-                }
-                if (char.match(reSign)) {
-                    token = char;
-                    return 'numberSign';
-                }
-                if (char.match(reDigit)) {
-                    token = char;
-                    return 'numberDigit';
-                }
-                if (char.match(reOpenParen)) {
-                    tokens.push(char);
-                    return 'start';
-                }
-                if (char.match(reCloseParen)) {
-                    tokens.push(char);
-                    return 'start';
-                }
-                if (char.match(reCloseParen)) {
-                    tokens.push(char);
-                    return 'start';
-                }
-                if (char.match(reOpenBracket)) {
-                    tokens.push(char);
-                    return 'start';
-                }
-                if (char.match(reCloseBracket)) {
-                    tokens.push(char);
-                    return 'start';
-                }
-            },
-            comment: (char) => {
-                if (!char) {
-                    return 'end';
-                }
-                if (char.match(reNewline)) {
-                    return 'start';
-                }
-                // Ignore anything else
-                return 'comment';
-            },
-            string: (char) => {
-                if (char.match(reQuote)) {
-                    // Note the *token* doesn't get a final quote
-                    // or contain backslashes.
-                    tokens.push(token);
-                    return 'start';
-                }
-                if (char.match(reBackslash)) {
-                    return 'stringEscape';
-                }
-                if (char) {
-                    token += char;
-                    return 'string';
-                }
-            },
-            stringEscape: (char) => {
-                if (char.match(reQuote) || char.match(reBackslash)) {
-                    token += char;
-                    return 'string';
-                }
-            },
-            word: (char) => {
-                if (!char) {
-                    tokens.push(token);
-                    return 'end';
-                }
-                if (char === '(' || char === ')' || char === '[' || char === ']') {
-                    tokens.push(token);
-                    return machine.handlers.start(char);
-                }
-                if (char.match(reNewline)) {
-                    tokens.push(token);
-                    return 'start';
-                }
-                if (char.match(reSpace)) {
-                    tokens.push(token);
-                    return 'start';
-                }
-                if (char.match(reWord)) {
-                    token += char;
-                    return 'word';
-                }
-            },
-            numberSign: (char) => {
-                if (char.match(reDigit)) {
-                    token += char;
-                    return 'numberDigit';
-                }
-            },
-            numberDigit: (char) => {
-                if (!char) {
-                    tokens.push(token);
-                    return 'end';
-                }
-                if (char.match(reSpace)) {
-                    tokens.push(token);
-                    return 'start';
-                }
-                if (char.match(reDigit)) {
-                    token += char;
-                    return 'numberDigit';
-                }
-                if (char.match(reDot)) {
-                    token += char;
-                    return 'numberDot';
-                }
-                if (char.match(reExponent)) {
-                    token += char;
-                    return 'numberExponent';
-                }
-            },
-            numberDot: (char) => {
-                if (char.match(reDigit)) {
-                    token += char;
-                    return 'numberFraction';
-                }
-            },
-            numberFraction: (char) => {
-                if (char.match(reDigit)) {
-                    token += char;
-                    return 'numberFraction';
-                }
-                if (char.match(reExponent)) {
-                    token += char;
-                    return 'numberExponent';
-                }
-            },
-            numberExponent: (char) => {
-                if (char.match(reSign)) {
-                    token += char;
-                    return 'numberExponentSign';
-                }
-            },
-            numberExponentSign: (char) => {
-                if (char.match(reDigit)) {
-                    token += char;
-                    return 'numberExponentDigit';
-                }
-            },
-            numberExponentDigit: (char) => {
-                if (!char) {
-                    tokens.push(token);
-                    return 'end';
-                }
-                if (char.match(reSpace)) {
-                    tokens.push(token);
-                    return 'start';
-                }
-                if (char.match(reDigit)) {
-                    token += char;
-                    return 'numberExponentDigit';
-                }
-            },
-            end: (char) => {
-                if (!char) {
-                    return 'end';
-                }
-            }
-        });
-
-        machine.run(str);
-
-        return tokens.list;
+    sourceForNode(listNode) {
+        return this.sourceMap.get(listNode);
     }
 
-    parse(tokens) {
-        const reNumber = /^[0-9-]/;
+    parse(source) {
         let parsed = new ListBuilder();
-        let parens = 0;
-        let oldState;
         let stack = [];
-        let sub;
+        let start = 0;
+        let end = 0;
 
-        function push() {
-            stack.push([parsed, sub, parens, oldState]);
-            parsed = sub;
-            sub = undefined;
-            parens = 0;
-        }
-        function pop() {
-            [parsed, sub, parens, oldState] = stack.pop();
-        }
+        let reWhitespace = /^[ \t]$/;
+        let reNewline = /^[\n\r]$/;
+        let reDelimiters = /^[-+*\/\[\]()<> \t\n\r]$/;
+        let reDigit = /^[0-9]$/;
 
-        function common(token, state=machine.state) {
-            if (token === undefined) {
-                throw new SyntaxError('Out of input');
-            }
-            if (token === '(') {
-                parens++;
-                parsed.push(token);
-                return state;
-            }
-            if (token === ')') {
-                parens--;
-                parsed.push(token);
-                return state;
-            }
-            if (token === '[') {
-                sub = new ListBuilder();
-                oldState = machine.state;
-                push();
-                return 'block';
-            }
-            if (token === 'to') {
-                /*
-                Transform this syntax:
+        let push = () => {
+            stack.push(parsed);
+            parsed = new ListBuilder();
+        };
 
-                    to func :arg1 :arg2
-                        blah
-                    end
-                
-                Into equivalent of this:
+        let pop = () => {
+            let sublist = parsed.list;
+            parsed = stack.pop();
+            return sublist;
+        };
 
-                    (to "func" "arg1" "arg2" [
-                        blah
-                    ])
-                
-                */
-                parsed.push('(');
-                parsed.push('to');
-                oldState = machine.state;
-                return 'to';
-            }
+        let peek = () => {
+            return source.charAt(end);
+        };
 
-            // Numeric literal
-            if (token.match(reNumber)) {
-                parsed.push(parseFloat(token));
-                return state;
-            }
+        let consume = () => {
+            end++;
+        };
 
-            // A word, string, or such
-            parsed.push(token);
-            return state;
-        }
-        let machine = new StateMachine({
-            start: (token) => {
-                if (!token) {
-                    return 'end';
+        let record = (val) => {
+            parsed.push(val);
+            this.sourceMap.set(parsed.end, {
+                source: source,
+                start: start,
+                end: end,
+            });
+            start = end;
+        };
+
+        let discard = () => {
+            start = end;
+        };
+
+        let parseComment = () => {
+            consume(); // skip the ";"
+            for(;;) {
+                let char = peek();
+                consume();
+                if (!char || char.match(reNewline)) {
+                    discard();
+                    return;
                 }
-                return common(token);
-            },
-            block: (token) => {
-                if (token === ']') {
-                    if (parens) {
-                        throw new SyntaxError('Cannot close bracket when parens are open');
+            }
+        };
+
+        let parseList = () => {
+            consume(); // skip the "["
+            push();
+            for(;;) {
+                let char = peek();
+                if (!char) {
+                    throw new SyntaxError("End of input in list");
+                }
+                if (char === ']') {
+                    consume();
+                    record(pop());
+                    return;
+                }
+                parseMain();
+            }
+        };
+
+        let parseNumber = () => {
+            let char = peek();
+            // invariant: char is '-' or a digit
+            let token = char;
+            consume();
+            // integer part
+            for (;;) {
+                let char = peek();
+                if (char.match(reDigit)) {
+                    token += char;
+                    consume();
+                    continue;
+                }
+                // @fixme check about \ in numbers?
+                break;
+            }
+            // fractional part?
+            char = peek();
+            if (char === '.') {
+                consume();
+                token += char;
+
+                char = peek();
+                if (!char.match(reDigit)) {
+                    throw new SyntaxError('Expected decimals');
+                }
+                token += char;
+                consume();
+
+                for (;;) {
+                    char = peek();
+                    if (char.match(reDigit)) {
+                        token += char;
+                        consume();
+                        continue;
                     }
-                    if (!stack.length) {
-                        throw new SyntaxError('Cannot close non-open bracket');
-                    }
-                    pop();
-                    parsed.push(sub.list);
-                    return oldState;
-                }
-                return common(token);
-            },
-            to: (token) => {
-                // convert the function name into a string
-                parsed.push('"' + token);
-                return 'toArgs';
-            },
-            toArgs: (token) => {
-                if (token[0] === ':') {
-                    // convert the function arg to a string
-                    parsed.push('"' + token.substr(1));
-                    return 'toArgs';
-                }
-                // Create a block for the remaining contents
-                sub = new ListBuilder();
-                push();
-                return machine.handlers.toBlock(token);
-            },
-            toBlock: (token) => {
-                if (token === 'end') {
-                    let subList = parsed.list;
-                    pop();
-                    parsed.push(subList);
-                    parsed.push(')');
-                    return oldState;
-                }
-                return common(token, 'toBlock');
-            },
-            end: (token) => {
-                if (!token) {
-                    return 'end';
+                    break;
                 }
             }
-        });
-        machine.run(tokens);
-        return parsed.list;
+            char = peek();
+            if (char === 'e') {
+                // Exponent part
+                token += char;
+                consume();
+
+                char = peek();
+                if (char === '-' || char === '+') {
+                    token += char;
+                    consume();
+                }
+                for (;;) {
+                    char = peek();
+                    if (char.match(reDigit)) {
+                        token += char;
+                        consume();
+                        continue;
+                    }
+                    break;
+                }
+            }
+
+            char = peek();
+            if (!char || char.match(reDelimiters)) {
+                record(parseFloat(token));
+                return;
+            }
+        };
+
+        let parseWord = () => {
+            let token = '';
+            for (;;) {
+                let char = peek();
+                if (!char || char.match(reWhitespace) || char.match(reDelimiters)) {
+                    record(token);
+                    return;
+                }
+                if (char === '\\') {
+                    consume();
+                    if (!char) {
+                        throw new SyntaxError('End of input at backslash');
+                    }
+                    char = peek();
+                    token += char;
+                    consume();
+                    continue;
+                }
+                token += char;
+                consume();
+            }
+        };
+
+        let parseMain = () => {
+            let char = peek();
+            if (!char) {
+                throw new SyntaxError('End of input');
+            }
+            if (char === ';') {
+                parseComment();
+                return;
+            }
+            if (char === '[') {
+                parseList();
+                return;
+            }
+            if (char.match(reWhitespace)) {
+                consume();
+                discard();
+                return;
+            }
+            if (char.match(reNewline)) {
+                // @fixme should there be differences?
+                consume();
+                discard();
+                return;
+            }
+            if (char === '-' || char.match(reDigit)) {
+                parseNumber();
+                return;
+            }
+            if (char === '(' || char === ')') {
+                // @fixme count parens?
+                consume();
+                record(char);
+                return;
+            }
+            parseWord();
+        };
+
+        for (;;) {
+            let char = peek();
+            if (!char) {
+                // Done!
+                return parsed.list;
+            }
+            parseMain();
+        }
     }
 
     /**
@@ -1490,7 +1365,7 @@ export class Interpreter {
                 if (interpreter.onvalue) {
                     await interpreter.onvalue(rest, body, node);
                 }
-                return value.substr(1);
+                return rest;
             }
             if (first === ':') {
                 // Variable get
@@ -1571,6 +1446,64 @@ export class Interpreter {
             return undefined;
         }
 
+        async function handleTo() {
+            let node = iter;
+
+            // consume "to"
+            iter = iter.tail;
+
+            if (iter.isEmpty()) {
+                throw new SyntaxError('End of input expecting procedure name');
+            }
+            let name = iter.head;
+            if (!isString(name)) {
+                throw new SyntaxError('Procedure name must be a word');
+            }
+            // consume name
+            iter = iter.tail;
+
+            let args = [];
+
+            // Collect any :arg names
+            for (;;) {
+                if (iter.isEmpty()) {
+                    throw new SyntaxError('End of input reading procedure definition');
+                }
+                let arg = iter.head;
+                if (isString(arg) && arg[0] === ':') {
+                    args.push(arg.substr(1));
+                    iter = iter.tail;
+                    continue;
+                }
+                break;
+            }
+
+            // Collect the body instructions
+            let body = new ListBuilder();
+            for(;;) {
+                if (iter.isEmpty()) {
+                    throw new SyntaxError('End of input reading procedure definition');
+                }
+                let instruction = iter.head;
+                if (instruction === 'end') {
+                    // Consume 'end'
+                    iter = iter.tail;
+                    break;
+                }
+                // Copy the source-map info from the parser
+                body.push(instruction);
+                let map = interpreter.sourceForNode(iter);
+                if (map) {
+                    interpreter.sourceMap.set(body.end, map);
+                }
+                iter = iter.tail;
+            }
+
+            let proc = interpreter.procedure(interpreter.currentScope(), name, args, body.list);
+            interpreter.currentScope().set(name, proc);
+            return;
+        }
+
         while (!context.stop) {
             if (retval !== undefined) {
                 if (iter.isEmpty()) {
@@ -1580,6 +1513,10 @@ export class Interpreter {
             }
             if (iter.isEmpty()) {
                 break;
+            }
+            if (iter.head === 'to') {
+                await handleTo();
+                continue;
             }
             if (iter.head === '(') {
                 retval = await handleVariadic();
@@ -1600,8 +1537,7 @@ export class Interpreter {
             // @todo allow pushing it onto a task list
             throw new Error('Logo code is already running');
         }
-        let tokens = this.tokenize(source);
-        let parsed = this.parse(tokens);
+        let parsed = this.parse(source);
         this.running = true;
         try {
             let retval = await this.evaluate(parsed);

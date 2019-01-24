@@ -14,14 +14,14 @@
 cs up seth 0 setpos [0 0]
 
 up back 100 right 10 down
-make "n" 1
+make "n 1
 repeat 18 [
     color item :n [black blue green red]
-    make "n" sum modulo :n 4 1
+    make "n sum modulo :n 4 1
     forward 200 right 10 back 200 right 10
 ]
 
-print "Done!"</textarea>
+print "Done!</textarea>
         <button id=logo-run>Execute</button>
         <button id=logo-pause disabled>Pause</button>
         <button id=logo-break disabled>Break</button>

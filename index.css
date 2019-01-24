@@ -79,6 +79,7 @@
 
 #logo-debug span {
     color: black;
+    white-space: pre-wrap;
 }
 #logo-debug span.active {
     color: blue;

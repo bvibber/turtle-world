@@ -187,14 +187,29 @@ function node2html(node, map) {
 }
 let nodeMap = new Map();
 let bodyNode = undefined;
-function updateBody(body, node) {
-    if (body !== bodyNode) {
-        elDebug.innerHTML = '';
-        elDebug.appendChild(node2html(new List(body), nodeMap));
+function span(className, text) {
+    let el = document.createElement('span');
+    if (className) {
+        el.className = className;
     }
-    let span = nodeMap.get(node);
-    if (span) {
-        span.className = 'active';
+    el.appendChild(document.createTextNode(text));
+    return el;
+}
+function updateBody(body, node) {
+    let map = logo.sourceForNode(node);
+    if (map) {
+        let source = map.source;
+        elDebug.innerHTML = '';
+        elDebug.appendChild(span('', source.substr(0, map.start)));
+        elDebug.appendChild(span('active', source.substr(map.start, map.end - map.start)));
+        elDebug.appendChild(span('', source.substr(map.end)));
+    } else {
+        if (body !== bodyNode) {
+        }
+        let span = nodeMap.get(node);
+        if (span) {
+            span.className = 'active';
+        }
     }
 }
 

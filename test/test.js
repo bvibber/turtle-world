@@ -15,6 +15,13 @@ async function logoRun(input, globals={}) {
     return retval;
 }
 
+function logoParse(input, output) {
+    let logo = new Interpreter();
+    let retval = logo.parse(input);
+    assert.ok(List.equal(retval, output),
+        "expected " + String(output) + " but got " + String(retval));
+}
+
 async function logoTest(input, output, globals={}) {
     let retval = await logoRun(input, globals);
     assert.ok(List.equal(retval, output),
@@ -33,6 +40,61 @@ async function logoTry(input, errorType, globals={}) {
 }
 
 describe('Logo', function() {
+    describe('Parsing', function() {
+        it('should parse an empty input', function() {
+            logoParse("", List.of());
+        });
+
+        it('should parse an empty input with comment', function() {
+            logoParse(';testing', List.of());
+        });
+        it('should parse a comment followed by a word line', function() {
+            logoParse(';testing\nword', List.of('word'));
+        });
+
+        it('should parse a word input', function() {
+            logoParse("word", List.of('word'));
+        });
+        it('should parse a numeric input', function() {
+            logoParse("1983", List.of(1983));
+        });
+        it('should parse a negative numeric input', function() {
+            logoParse("-273", List.of(-273));
+        });
+        it('should parse a fractional numeric input', function() {
+            logoParse("98.6", List.of(98.6));
+        });
+        it('should parse a exponential numeric input', function() {
+            logoParse("1e20", List.of(1e20));
+        });
+        it('should parse a negative exponential numeric input', function() {
+            logoParse("1e-20", List.of(1e-20));
+        });
+        it('should parse a positive exponential numeric input', function() {
+            logoParse("1e+20", List.of(1e+20));
+        });
+        it('should parse a frac exponential numeric input', function() {
+            logoParse("1.5e20", List.of(1.5e20));
+        });
+        it('should parse a frac negative exponential numeric input', function() {
+            logoParse("1.5e-20", List.of(1.5e-20));
+        });
+        it('should parse a frac positive exponential numeric input', function() {
+            logoParse("1.5e+20", List.of(1.5e+20));
+        });
+
+        it('should parse two words', function() {
+            logoParse("first second", List.of("first", "second"));
+        });
+        it('should parse an empty list', function() {
+            logoParse("[]", List.of(List.of()));
+        });
+        it('should parse a list with stuff', function() {
+            logoParse(`outside1 [inside1 inside2] outside2`,
+                List.of('outside1', List.of('inside1', 'inside2'), 'outside2'));
+        });
+    });
+
     describe('Command/argument parsing', function() {
         it('should throw given a value with no command', async function() {
             await logoTry("32", SyntaxError);
@@ -90,10 +152,10 @@ describe('Logo', function() {
             await logoTest("testout -1.4e-32", -1.4e-32);
         });
         it('should return "hi" for "hi"', async function() {
-            await logoTest(`testout "hi"`, 'hi');
+            await logoTest(`testout "hi`, 'hi');
         });
-        it('should return "hi there" for "hi there"', async function() {
-            await logoTest(`testout "hi there"`, 'hi there');
+        it('should return "hi there" for "hi\\ there', async function() {
+            await logoTest(`testout "hi\\ there`, 'hi there');
         });
         it('should return [1 2] for "[1 2]"', async function() {
             await logoTest("testout [1 2]", List.of(1, 2));
@@ -104,7 +166,7 @@ describe('Logo', function() {
             await logoTry(`testout :n`, ReferenceError);
         });
         it('should throw on thing get of undefined variable', async function() {
-            await logoTry(`testout thing "n"`, ReferenceError);
+            await logoTry(`testout thing "n`, ReferenceError);
         });
         it('should throw on thing get of int', async function() {
             await logoTry(`testout thing 32`, TypeError);
@@ -113,10 +175,10 @@ describe('Logo', function() {
             await logoTry(`testout thing []`, TypeError);
         });
         it('should work on : get of defined variable', async function() {
-            await logoTest(`make "n" 32 testout :n`, 32);
+            await logoTest(`make "n 32 testout :n`, 32);
         });
         it('should work on thing get of defined variable', async function() {
-            await logoTest(`make "n" 32 testout thing "n"`, 32);
+            await logoTest(`make "n 32 testout thing "n`, 32);
         });
     });
     describe("Standard library", function() {
@@ -146,8 +208,8 @@ describe('Logo', function() {
         it('should return true for: equalp 7 7', async function() {
             await logoTest(`testout equalp 7 7`, true);
         });
-        it('should return true for: equalp "7" "7"', async function() {
-            await logoTest(`testout equalp "7" "7"`, true);
+        it('should return true for: equalp "7 "7', async function() {
+            await logoTest(`testout equalp "7 "7`, true);
         });
         it('should return true for: equalp [7] [7]', async function() {
             await logoTest(`testout equalp [7] [7]`, true);
@@ -155,11 +217,11 @@ describe('Logo', function() {
         it('should return false for: equalp 7 23', async function() {
             await logoTest(`testout equalp 7 23`, false);
         });
-        it('should return false for: equalp 7 "7"', async function() {
-            await logoTest(`testout equalp 7 "7"`, false);
+        it('should return false for: equalp 7 "7', async function() {
+            await logoTest(`testout equalp 7 "7`, false);
         });
-        it('should return false for: equalp [7] ["7"]', async function() {
-            await logoTest(`testout equalp [7] ["7"]`, false);
+        it('should return false for: equalp [7] ["7]', async function() {
+            await logoTest(`testout equalp [7] ["7]`, false);
         });
 
         // item selection
@@ -175,10 +237,10 @@ describe('Logo', function() {
     });
     describe("Blocks and meta-execution", function() {
         it('should run code inside if true', async function() {
-            await logoTest(`testout "initial" if true [testout "block ran"]`, 'block ran');
+            await logoTest(`testout "initial if true [testout "block\\ ran]`, 'block ran');
         });
         it('should not run code inside if false', async function() {
-            await logoTest(`testout "initial" if false [testout "block ran"]`, 'initial');
+            await logoTest(`testout "initial if false [testout "block\\ ran]`, 'initial');
         });
         it('should pass return values from block to if', async function() {
             await logoTest(`testout if true [sum 1 2]`, 3);
@@ -209,8 +271,8 @@ describe('Logo', function() {
         it('should return no output and no error for 12 days of xmas', async function() {
             let source = `
             to day_of_xmas :day
-                (print "On day" :day "of X-mas, my true love gave to me")
-                make "gifts" reverse [
+                (print [On day] :day [of X\\-mas, my true love gave to me])
+                make "gifts reverse [
                     [partridge in a pear tree]
                     [turtle doves]
                     [French hens]
@@ -224,20 +286,20 @@ describe('Logo', function() {
                     [pipers piping]
                     [drummers drumming]
                 ]
-                make "n" 12
+                make "n 12
                 repeat 12 [
                     if lessp :n sum :day 1 [
                     (print :n first :gifts)
                     ]
-                    make "gifts" butfirst :gifts
-                    make "n" difference :n 1
+                    make "gifts butfirst :gifts
+                    make "n difference :n 1
                 ]
             end
 
-            make "day" 1
+            make "day 1
             repeat 12 [
                 day_of_xmas :day
-                make "day" sum :day 1
+                make "day sum :day 1
             ]
             `;
             await logoTest(source, undefined);
