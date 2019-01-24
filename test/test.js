@@ -105,6 +105,15 @@ describe('Logo', function() {
             logoParse(`outside1 [inside1 inside2] outside2`,
                 List.of('outside1', List.of('inside1', 'inside2'), 'outside2'));
         });
+
+        it('should parse delimiters and operators', function() {
+            logoParse(`ifelse 1<2[print(3+4)/5][print :x+6]`,
+                List.of('ifelse', 1, '<', 2,
+                    List.of('print', '(', 3, '+', 4, ')', '/', 5),
+                    List.of('print', ':x', '+', 6)
+                )
+            );
+        });
     });
 
     describe('Command/argument parsing', function() {

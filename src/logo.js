@@ -1282,6 +1282,11 @@ export class Interpreter {
                 record(char);
                 return;
             }
+            if (char.match(reOperators)) {
+                consume();
+                record(char);
+                return;
+            }
             parseWord();
         };
 
