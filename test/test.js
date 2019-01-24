@@ -222,6 +222,12 @@ describe('Logo', function() {
         it('should fail with string literals with initial delimiter and unescaped further delims', async function() {
             await logoTry(`print "****`, TypeError); // should be SyntaxError
         });
+        it('should handle quoted words with funky escaping', async function() {
+            await logoPrint(`print "(hello\\)`, '(hello)');
+        });
+        it('should fail on quoted words with wrong funky escaping', async function() {
+            await logoTry(`print "(hello)`, SyntaxError);
+        });
     });
     describe("Standard library", function() {
         // booleans
@@ -331,7 +337,7 @@ describe('Logo', function() {
                 make "n 12
                 repeat 12 [
                     if lessp :n sum :day 1 [
-                    (print :n first :gifts)
+                        (print :n first :gifts)
                     ]
                     make "gifts butfirst :gifts
                     make "n difference :n 1

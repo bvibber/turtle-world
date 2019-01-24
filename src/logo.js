@@ -1484,6 +1484,9 @@ export class Interpreter {
             // Fixed-length procedure call or literal
             let node = iter;
             let command = node.head;
+            if (command === ')') {
+                throw new SyntaxError('Unexpected close paren');
+            }
             if (!isProcedure(command)) {
                 return await handleLiteral();
             }
@@ -1497,6 +1500,9 @@ export class Interpreter {
                 }
                 if (iter.isEmpty()) {
                     throw new SyntaxError('End of input expecting fixed arg');
+                }
+                if (iter.head === ')') {
+                    throw new SyntaxError('Unexpected close paren');
                 }
                 let retval = await handleArg(iter.head);
                 if (retval === undefined) {
