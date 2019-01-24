@@ -2,15 +2,20 @@ import {List, Interpreter} from '../src/logo.js';
 
 let assert = require('assert');
 
-async function logoRun(input, globals={}) {
+async function logoRun(input, globals={}, output=[]) {
     let logo = new Interpreter();
     let retval;
     logo.globalScope.bindValues(globals);
     logo.globalScope.bindValues({
         testout: async function(arg) {
+            // "testout" command returns value literally
             retval = arg;
         }
     });
+    logo.onprint = (str) => {
+        // "print" and "show" commands stringify
+        output.push(str);
+    };
     await logo.execute(input);
     return retval;
 }
@@ -26,6 +31,13 @@ async function logoTest(input, output, globals={}) {
     let retval = await logoRun(input, globals);
     assert.ok(List.equal(retval, output),
         "expected " + String(output) + " but got " + String(retval));
+}
+
+async function logoPrint(input, output, globals={}) {
+    let prints = [];
+    let retval = await logoRun(input, globals, prints);
+    assert.ok(List.equal(prints[0], output),
+        "expected " + String(output) + " but got " + String(prints[0]));
 }
 
 async function logoTry(input, errorType, globals={}) {
@@ -179,6 +191,17 @@ describe('Logo', function() {
         });
         it('should work on thing get of defined variable', async function() {
             await logoTest(`make "n 32 testout thing "n`, 32);
+        });
+    });
+    describe('print command', function() {
+        it('should print string literals', async function() {
+            await logoPrint(`print "a`, 'a');
+        });
+        it('should print lists without brackets', async function() {
+            await logoPrint(`print [a b c]`, 'a b c');
+        });
+        it('should accept multiple params', async function() {
+            await logoPrint(`(print "a [a b c])`, 'a a b c');
         });
     });
     describe("Standard library", function() {

@@ -360,7 +360,7 @@ export class List {
         return List.from(this);
     }
 
-    static stringify(val, stack=[]) {
+    static stringify(val, delimiters = ['[', ']'], stack=[]) {
         if (isList(val)) {
             // Avoid recursive list references
             if (stack.includes(val)) {
@@ -368,16 +368,16 @@ export class List {
             }
             stack.push(val);
             let first = true;
-            let str = '[';
+            let str = delimiters[0];
             for (let item of val) {
                 if (first) {
                     first = false;
                 } else {
-                    str += ', ';
+                    str += ' ';
                 }
-                str += List.stringify(item, stack);
+                str += List.stringify(item, delimiters, stack);
             }
-            str += ']';
+            str += delimiters[1];
             stack.pop();
             return str;
         }
@@ -753,9 +753,18 @@ let builtins = {
 
     print: async function(arg1, ...args) {
         args.unshift(arg1);
-        console.log.apply(console, args.map((arg) => {
-            return String(arg);
-        }));
+        let msg = args.map((arg) => {
+            return List.stringify(arg, ['', '']);
+        }).join(' ');
+        await this.print(msg);
+    },
+
+    show: async function(arg1, ...args) {
+        args.unshift(arg1);
+        let msg = args.map((arg) => {
+            return List.stringify(arg, ['[', ']']);
+        }).join(' ');
+        await this.print(msg);
     },
 
     wait: function(frames) {
@@ -987,6 +996,7 @@ export class Interpreter {
         // Code can trace, or even delay execution.
         this.oncall = null;
         this.onvalue = null;
+        this.onprint = null;
     }
 
     currentContext() {
@@ -1005,6 +1015,15 @@ export class Interpreter {
             return scopes[len - 1];
         }
         return undefined;
+    }
+
+    async print(str) {
+        str = String(str);
+        if (this.onprint) {
+            await this.onprint(str);
+        } else {
+            this.console.log(str);
+        }
     }
 
     /**
