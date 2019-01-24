@@ -75,15 +75,6 @@ elBreak.addEventListener('click', function(event) {
 });
 
 let api = {
-    // Rebind 'print'
-    print: async function(arg, ...args) {
-        args.unshift(arg);
-        // @fixme correctly flatten any lists
-        let str = args.join(' ');
-
-        print('output', str);
-    },
-
     // Turtle commands
     cs: async function() {
         turtle.clearScreen();
@@ -138,6 +129,9 @@ let api = {
 };
 
 logo.globalScope.bindValues(api);
+logo.onprint = async function(str) {
+    print('output', str);
+};
 
 async function delay(ms) {
     await new Promise((resolve, reject) => {
