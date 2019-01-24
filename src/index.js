@@ -193,10 +193,17 @@ function updateBody(body, node) {
     let map = logo.sourceForNode(node);
     if (map) {
         let source = map.source;
+        let before = span('', source.substr(0, map.start));
+        let active = span('active', source.substr(map.start, map.end - map.start));
+        let after = span('', source.substr(map.end));
         elDebug.innerHTML = '';
-        elDebug.appendChild(span('', source.substr(0, map.start)));
-        elDebug.appendChild(span('active', source.substr(map.start, map.end - map.start)));
-        elDebug.appendChild(span('', source.substr(map.end)));
+        elDebug.appendChild(before);
+        elDebug.appendChild(active);
+        elDebug.appendChild(after);
+
+        if (active.offsetTop < elDebug.scrollTop || active.offsetTop + active.offsetHeight > elDebug.scrollTop + elDebug.clientHeight) {
+            elDebug.scrollTop = Math.max(0, active.offsetTop - 40);
+        }
     } else {
         if (body !== bodyNode) {
         }

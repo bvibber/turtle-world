@@ -23,6 +23,7 @@
     height: 240px;
     left: 0;
     right: 50%;
+    overflow-y: scroll;
 }
 #logo-console {
     background-color: lightgrey;
