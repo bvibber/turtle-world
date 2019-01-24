@@ -33,9 +33,24 @@ function isString(val) {
     return typeof val === 'string';
 }
 
-let reWord = /^\w[\w\d_-]*/; // ???????????
-function isWord(token) {
-    return isString(token) && token.match(reWord);
+function isQuoted(val) {
+    if (isString(val) && val[0] === '"') {
+        return true;
+    }
+}
+
+function isVariable(val) {
+    return isString(val) && val[0] === ':';
+}
+
+function isProcedure(val) {
+    if (!isString(val)) {
+        return false;
+    }
+    if (isQuoted(val) || isVariable(val)) {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -1334,7 +1349,7 @@ export class Interpreter {
         let iter = body;
 
         function validateCommand(command) {
-            if (!isWord(command)) {
+            if (!isString(command)) {
                 throw new SyntaxError('Invalid command word: ' + command);
             }
             let binding = scope.getBinding(command);
@@ -1383,13 +1398,12 @@ export class Interpreter {
                 // Variadic command
                 return await handleVariadic();
             }
-            if (isWord(iter.head)) {
-                return await handleFixed();
-            }
-            return await handleLiteral();
+            return await handleFixed();
         }
 
         async function handleVariadic() {
+            // Variadic procedure call (foo arg1 arg2 ...)
+
             // Consume the "("
             iter = iter.tail;
 
@@ -1400,23 +1414,36 @@ export class Interpreter {
 
             let node = iter;
             let command = node.head;
-            let func = validateCommand(command);
+            let literal;
+            let func;
             let args = [];
-            iter = iter.tail;
+            if (isProcedure(command)) {
+                func = validateCommand(command);
+                iter = iter.tail;
+            } else {
+                literal = handleLiteral();
+            }
             while (!context.stop) {
                 if (iter.isEmpty()) {
                     throw new SyntaxError('End of input expecting variadic arg');
                 }
                 if (iter.head === ')') {
-                    if (args.length < func.length) {
-                        throw new SyntaxError('Not enough args to call ' + func.name);
-                    }
                     iter = iter.tail;
-                    return await interpreter.performCall(func, args, body, node);
+                    if (func) {
+                        if (args.length < func.length) {
+                            throw new SyntaxError('Not enough args to ' + command);
+                        }
+                        return await interpreter.performCall(func, args, body, node);
+                    } else {
+                        if (args.length) {
+                            throw new SyntaxError('Got unexpected args to a literal');
+                        }
+                        return literal;
+                    }
                 }
                 let retval = await handleArg(iter.head);
                 if (retval === undefined) {
-                    throw new SyntaxError('Expected output from arg to ' + func.name);
+                    throw new SyntaxError('Expected output from arg to ' + command);
                 }
                 args.push(retval);
             }
@@ -1424,9 +1451,13 @@ export class Interpreter {
         }
 
         async function handleFixed() {
-            // Fixed-length command
+            // Fixed-length procedure call or literal
             let node = iter;
             let command = node.head;
+            if (!isProcedure(command)) {
+                return await handleLiteral();
+            }
+
             let func = validateCommand(command);
             let args = [];
             iter = iter.tail;
@@ -1522,11 +1553,7 @@ export class Interpreter {
                 retval = await handleVariadic();
                 continue;
             }
-            if (isWord(iter.head)) {
-                retval = await handleFixed();
-                continue;
-            }
-            retval = await handleLiteral();
+            retval = await handleFixed();
         }
         return retval;
     }
