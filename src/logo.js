@@ -1073,16 +1073,17 @@ export class Interpreter {
         let reWhitespace = /^[ \t]$/;
         let reNewline = /^[\n\r]$/;
         let reDelimiters = /^[-+*\/\[\]()<> \t\n\r]$/;
+        let reOperators =  /^[-+*\/\<>]$/;
         let reDigit = /^[0-9]$/;
 
         let push = () => {
-            stack.push(parsed);
+            stack.push([parsed, start]);
             parsed = new ListBuilder();
         };
 
         let pop = () => {
             let sublist = parsed.list;
-            parsed = stack.pop();
+            [parsed, start] = stack.pop();
             return sublist;
         };
 
