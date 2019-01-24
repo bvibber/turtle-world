@@ -42,13 +42,13 @@ end
 
 These details may change...
 
-"Word" symbols currently must be made of word-like characters. Classic Logos allow all kinds of weird chars.
-
-Quoted strings use double-quote characters both before and after the string, as is more common in today's languages. Thus use `print "Hello, World!"` rather than `print ["Hello, "World!]` or `make "year" 2019` rather than `make "year 1983`.
-
 Infix operators are not yet implemented. Use procedure operations like `sum` and `product` for arithmetic.
 
 Variables and procedures share a common namespace.
+
+Procedures may be created inside a procedure.
+
+Lexical scoping (not dynamic), except that blocks executed via 'if' etc run in the caller's scope.
 
 # Syntax
 
@@ -56,8 +56,8 @@ Variables and procedures share a common namespace.
 * lists: `[` ... `]`
 * words: `foo` with no quotes is tokenized to a string, interpreted as a command name in instruction lists
     * a `:` prefix on a word `:foo` marks it as a variable, equivalent to calling `thing "foo"` in execution
-* quoted strings: `"foo"` or `"foo bar"` (must include closing quote)
-    * may use `\` as an escape character
+    * a `"` prefix on a word `"foo` marks it as a string literal in instruction lists
+    * may use `\` as an escape character for spaces and delimiters
 * numbers: floating point, pos or neg, exponents ok
 * booleans: use the `true` and `false` operations
 * commands: lists that contain sequences of procedure names as words, quoted and numeric literals, and lists
@@ -73,17 +73,17 @@ Variable and procedure names are "passed by reference" by quoting their names, a
 
 ```
 ; set variable "atari" to number 400
-make "atari" 400
+make "atari 400
 
 ; prints 400
-print thing "atari"
+print thing "atari
 ```
 
 To get variable values, a shortcut `:` prefix can be used as a shortcut for `thing`:
 
 ```
 ; let's go big
-make "atari" sum :atari 400
+make "atari sum :atari 400
 
 ; prints 800
 print :atari
@@ -117,7 +117,7 @@ For instance the `if` command takes a block to execute if the condition is true:
 
 ```
 if equalp :a :b [
-    print "the same"
+    print [the same]
 ]
 ```
 
@@ -127,7 +127,7 @@ Currently the blocks are executed in the same scope and context as the function 
 forever [
     dostuff ; may alter vars
     if greaterp :a :b [
-        print "the same, now exiting"
+        print [the same, now exiting]
         ; We need the value of "a" inside the block
         output :a
     ]
