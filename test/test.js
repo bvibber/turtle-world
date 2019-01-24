@@ -212,6 +212,16 @@ describe('Logo', function() {
         it('should accept multiple params', async function() {
             await logoPrint(`(print "a [a b c])`, 'a a b c');
         });
+
+        it('should print string literals with escaped chars', async function() {
+            await logoPrint(`print "San\\ Francisco`, 'San Francisco');
+        });
+        it('should print string literals with initial delimiter', async function() {
+            await logoPrint(`print "*`, '*');
+        });
+        it('should fail with string literals with initial delimiter and unescaped further delims', async function() {
+            await logoTry(`print "****`, TypeError); // should be SyntaxError
+        });
     });
     describe("Standard library", function() {
         // booleans

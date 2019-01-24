@@ -1229,7 +1229,12 @@ export class Interpreter {
             let token = '';
             for (;;) {
                 let char = peek();
-                if (!char || char.match(reWhitespace) || char.match(reDelimiters)) {
+                if (!char || char.match(reWhitespace)) {
+                    record(token);
+                    return;
+                }
+                if (char.match(reDelimiters) && token !== '"' ) {
+                    // First delimiter char doesn't have to be quoted
                     record(token);
                     return;
                 }
