@@ -42,6 +42,8 @@ end
 
 These details may change...
 
+Lists and instruction arguments may span across newlines, which are treated the same as spaces. Closing parentheses and brackets are required.
+
 Infix operators are not yet implemented. Use procedure operations like `sum` and `product` for arithmetic.
 
 Variables and procedures share a common namespace.
@@ -65,14 +67,14 @@ Lexical scoping (not dynamic), except that blocks executed via 'if' etc run in t
 
 ## Operators
 
-There are currently no infix operators like `:a + :b` so you must use the equivalent prefix operations like `sum :a :b`. These are intended to be added in a parser rewrite.
+There are currently no infix operators like `:a + :b` so you must use the equivalent prefix operations like `sum :a :b`. These are intended to be added in a parser update.
 
 ## Accessors
 
 Variable and procedure names are "passed by reference" by quoting their names, as in:
 
 ```
-; set variable "atari" to number 400
+; set variable atari to number 400
 make "atari 400
 
 ; prints 400
@@ -107,11 +109,11 @@ runs as would the explicitly demarcated form:
 (output (product :n (factorial (difference :n 1))))
 ```
 
-Since it's unknown before execution whether a procedure call will return a value (an "operation") or not (a "command"), this is checked at runtime after execution. If a return value was expected as input to another call's argument, this will cause an error.
+Since it's unknown before execution whether a procedure call will return a value (an "operation") or not (a "command"), this is checked at runtime after execution. If a missing return value was expected as input to another call's argument, this will cause an error.
 
-## Blocks
+## Instruction lists
 
-Some commands and operations take "blocks" of code, which are lists of instruction words similar to a procedure body.
+Some commands and operations take blocks of code as instruction lists, which are interpreted like a procedure body. Usually list literals in source code are used to write instruction lists, but you could create them at runtime through list manipulation procedures.
 
 For instance the `if` command takes a block to execute if the condition is true:
 
@@ -140,9 +142,9 @@ The scoping rules may change to more traditional Logo dynamic scope rules where 
 
 ## Execution model
 
-The interpreter and all builtin procedures are implemented as JavaScript `async` functions. Logo commands may thus wait on timers, promises, or other async operations without blocking the event loop.
+Logo code is presented with a synchronous, single-threaded execution model, but the interpreter and all builtin procedures are implemented as JavaScript `async` functions. Logo commands may thus wait on timers, promises, or other async operations without blocking the event loop.
 
-This also allows control flow to be introspected, visualized, and debugged interactively on the web through a hook system. (Hook system not yet implemented.)
+This also allows control flow to be introspected, visualized, and debugged interactively on the web through a hook system.
 
 ## Lists
 
@@ -168,7 +170,7 @@ Whether a procedure returns a value or not affects interpretation of Logo instru
 
 ## Errors
 
-Error conditions are modeled as JS exceptions. Internal code may throw an exception, and this will cause Logo execution to halt and clean up the stack. It's up to the calling/embedding code to catch and present those exceptions in a useful way.
+Error conditions are modeled as JS exceptions. Internal code may throw an exception, and this will cause Logo execution to halt and clean up the interpreter stack. It's up to the calling/embedding code to catch and present those exceptions in a useful way.
 
 Currently there is no attempt to make the error messages traditionally Logo-y.
 
@@ -180,7 +182,7 @@ Logo code may call any JavaScript function that is passed in and bound as a vari
 
 There are no limits on memory usage for strings, lists, variable and procedure bindings, etc. It may be possible for Logo code to overuse memory, which may cause a crashed tab or Node process.
 
-It's possible for Logo code to hog the main loop and prevent input, timers etc from running if there are no actual asynchronous operations called during a `repeat` or `forever` loop. Once the hook system is in place, embedders may prevent this by forcing an event-loop bounce with `setTimeout` or `postMessage`.
+It's possible for Logo code to hog the main loop and prevent input, timers etc from running if there are no actual asynchronous operations called during a `repeat` or `forever` loop. Embedders may prevent this by forcing an event-loop bounce with `setTimeout` or `postMessage` in the `oncall` or `onliteral` callbacks.
 
 # Open projects
 
