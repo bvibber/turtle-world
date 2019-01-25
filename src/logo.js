@@ -14,6 +14,16 @@ const reDelimiters = /^[-+*\/\[\]()<>]$/;
 const reOperators =  /^[-+*\/<>]$/;
 const reDigit = /^[0-9]$/;
 
+const precedence = {
+    '*': 10,
+    '/': 10,
+    '+': 5,
+    '-': 5,
+    '<': 1,
+    '>': 1,
+    '=': 1,
+};
+
 /**
  * @typedef Atom
  * @type {(boolean|number|string|function)}
@@ -1355,7 +1365,6 @@ export class Interpreter {
         let interpreter = this;
         let scope = this.currentScope();
         let context = this.currentContext();
-        let retval;
         let iter = body;
 
         function validateCommand(command) {
@@ -1371,6 +1380,7 @@ export class Interpreter {
         }
 
         async function handleLiteral() {
+            console.log('handleLiteral', iter.head);
             let node = iter;
             let value = iter.head;
             iter = iter.tail;
@@ -1403,27 +1413,45 @@ export class Interpreter {
             throw new SyntaxError('Unexpected token ' + value);
         }
 
-        async function handleArg() {
+        async function handleArg(prio=0) {
+            console.log('handleArg', iter.head);
+            let retval;
             if (iter.head === '(') {
                 // Variadic command
-                return await handleVariadic();
+                retval = await handleVariadic(prio);
+            } else {
+                retval = await handleFixed(prio);
             }
-            return await handleFixed();
+            if (isOperator(iter.head)) {
+                retval = await handleOperator(retval, prio);
+            }
+            return retval;
         }
 
-        async function handleOperator(leftValue) {
+        async function handleOperator(leftValue, oldprio=0) {
+            console.log('handleOperator', iter.head);
             // ...
             let node = iter;
             let op = node.head;
+            let prio = precedence[op];
+            //console.log('prio', oldprio, prio, op);
+            if (prio < oldprio) {
+                /*
+                console.log('skipping low prio', oldprio, prio, op);
+                return leftValue;
+                */
+            }
+
             let func = validateCommand(op);
             iter = iter.tail;
-            // @fixme operator precedence order
-            let rightValue = await handleArg();
+
+            let rightValue = await handleArg(prio);
             let args = [leftValue, rightValue];
             return await interpreter.performCall(func, args, body, node);
         }
 
-        async function handleVariadic() {
+        async function handleVariadic(prio=0) {
+            console.log('handleVariadic', iter.head);
             // Variadic procedure call (foo arg1 arg2 ...)
 
             // Consume the "("
@@ -1443,10 +1471,7 @@ export class Interpreter {
                 func = validateCommand(command);
                 iter = iter.tail;
             } else {
-                literal = await handleLiteral();
-                if (!iter.isEmpty() && isOperator(iter.head)) {
-                    literal = await handleOperator(literal);
-                }
+                literal = await handleArg();
             }
             while (!context.stop) {
                 if (iter.isEmpty()) {
@@ -1454,36 +1479,29 @@ export class Interpreter {
                 }
                 if (iter.head === ')') {
                     iter = iter.tail;
-                    let retval;
                     if (func) {
                         if (args.length < func.length) {
                             throw new SyntaxError('Not enough args to ' + command);
                         }
-                        retval = await interpreter.performCall(func, args, body, node);
+                        return await interpreter.performCall(func, args, body, node);
                     } else {
                         if (args.length) {
                             throw new SyntaxError('Got unexpected args to a literal');
                         }
-                        retval = literal;
+                        return literal;
                     }
-                    if (!iter.isEmpty() && isOperator(iter.head)) {
-                        retval = await handleOperator(literal);
-                    }
-                    return retval;
                 }
-                let retval = await handleArg(iter.head);
+                let retval = await handleArg();
                 if (retval === undefined) {
                     throw new SyntaxError('Expected output from arg to ' + command);
-                }
-                if (!iter.isEmpty() && isOperator(iter.head)) {
-                    retval = await handleOperator(retval);
                 }
                 args.push(retval);
             }
             return undefined;
         }
 
-        async function handleFixed() {
+        async function handleFixed(prio=0) {
+            console.log('handleFixed', iter.head);
             // Fixed-length procedure call or literal
             let node = iter;
             let command = node.head;
@@ -1491,22 +1509,15 @@ export class Interpreter {
                 throw new SyntaxError('Unexpected close paren');
             }
             if (!isProcedure(command)) {
-                let literal = await handleLiteral();
-                if (!iter.isEmpty() && isOperator(iter.head)) {
-                    literal = await handleOperator(literal);
-                }
-                return literal;
+                let lit = await handleLiteral();
+                return lit;
             }
-
             let func = validateCommand(command);
             let args = [];
             iter = iter.tail;
             while (!context.stop) {
                 if (args.length >= func.length) {
                     let retval = await interpreter.performCall(func, args, body, node);
-                    if (!iter.isEmpty() && isOperator(iter.head)) {
-                        retval = await handleOperator(retval);
-                    }
                     return retval;
                 }
                 if (iter.isEmpty()) {
@@ -1515,7 +1526,7 @@ export class Interpreter {
                 if (iter.head === ')') {
                     throw new SyntaxError('Unexpected close paren');
                 }
-                let retval = await handleArg(iter.head);
+                let retval = await handleArg(prio);
                 if (retval === undefined) {
                     throw new SyntaxError('Expected output from arg to ' + func.name);
                 }
@@ -1582,6 +1593,7 @@ export class Interpreter {
             return;
         }
 
+        let retval;
         while (!context.stop) {
             if (retval !== undefined) {
                 if (iter.isEmpty()) {
@@ -1596,11 +1608,7 @@ export class Interpreter {
                 await handleTo();
                 continue;
             }
-            if (iter.head === '(') {
-                retval = await handleVariadic();
-                continue;
-            }
-            retval = await handleFixed();
+            retval = await handleArg();
         }
         return retval;
     }
