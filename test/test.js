@@ -202,6 +202,89 @@ describe('Logo', function() {
             await logoTest(`make "n 32 testout thing "n`, 32);
         });
     });
+    describe('Infix operators', function() {
+        it('Should add 1 + 2 -> 3', async function() {
+            await logoTest('testout 1 + 2', 3);
+        });
+        it('Should multiply 3 * 4 -> 12', async function() {
+            await logoTest('testout 3 * 4', 12);
+        });
+        it('Should handle 1 * 2 + 3 * 4 -> 14', async function() {
+            await logoTest('testout 1 * 2 + 3 * 4', 14);
+        });
+        it('Should handle paren groupings', async function() {
+            await logoTest('testout 48 * (2 + 3)', 240);
+        })
+        it('Should handle paren groupings 2', async function() {
+            await logoTest('testout 48 * (0.3 + 0.2)', 24);
+        });
+        it('Should get 20 for print (2 + 3) * 4', async function() {
+            await logoPrint(`print (2 + 3) * 4`, '20');
+        })
+        it('Should get 14 for print 2 + 3 * 4', async function() {
+            await logoPrint(`print 2 + 3 * 4`, '14');
+        })
+        it('Precendce: should get 14 for print 3 * 4 + 2', async function() {
+            await logoPrint(`print 3 * 4 + 2`, '14');
+        })
+        it('Precendce: should get 14 for print 3 * 4 + 2', async function() {
+            await logoPrint(`print 3 * 4 + 2`, '14');
+        })
+
+        it('binary minus', async function() {
+            await logoTest(`testout 7 - 1`, 6);
+        });
+        it('binary minus no space', async function() {
+            await logoTest(`testout 7-1`, 6);
+        });
+        it('negative number minus', async function() {
+            await logoTest(`testout product 7 -1`, -7);
+        });
+        it('unary minus on func', async function() {
+            await logoTest(`
+            to foo
+              output 7
+            end
+            testout -foo`, -7);
+        });
+        it('unary minus on num with space', async function() {
+            await logoTest(`testout - 3`, -3);
+        });
+        it('binary and unary minus together', async function() {
+            await logoTest(`testout -3 - -2`, -1);
+        });
+        it('binary vs unary 1', async function() {
+            await logoTest(`testout 3 * -4`, -12);
+        });
+        it('binary vs unary 2', async function() {
+            await logoTest(`testout 3 + 4 - 5`, 2);
+        });
+        it('operator binding test', async function() {
+            await logoTest(`
+            to y :n
+              output :n
+            end
+            make "x 2
+            testout :x * y 3 - 1`, 4);
+        });
+        it('operator binding test2', async function() {
+            await logoTest(`
+            make "x 2
+            make "a 8
+            make "b 9
+            testout :x * :a + :b`, 25);
+        });
+        it('operator binding test3', async function() {
+            await logoTest(`
+            to y :n
+              output :n
+            end
+            make "x 2
+            make "a 8
+            make "b 9
+            testout :x * y :a + :b`, 34);
+        });
+    });
     describe('print command', function() {
         it('should print string literals', async function() {
             await logoPrint(`print "a`, 'a');
@@ -220,7 +303,7 @@ describe('Logo', function() {
             await logoPrint(`print "*`, '*');
         });
         it('should fail with string literals with initial delimiter and unescaped further delims', async function() {
-            await logoTry(`print "****`, TypeError); // should be SyntaxError
+            await logoTry(`print "****`, SyntaxError);
         });
         it('should handle quoted words with funky escaping', async function() {
             await logoPrint(`print "(hello\\)`, '(hello)');
@@ -312,6 +395,38 @@ describe('Logo', function() {
             to factorial :n
                 if greaterp :n 0 [
                     output product :n factorial difference :n 1
+                ]
+                output 1
+            end
+            testout factorial 5
+            `;
+            await logoTest(source, 120);
+        });
+        it('should work on this thing', async function() {
+            let source = `
+            to a :n
+              output 5
+            end
+            make "n 10
+            testout :n * a :n + 1
+            `;
+            await logoTest(source, 50);
+        });
+        it('should work on this thing2', async function() {
+            let source = `
+            to a :n
+              output 5
+            end
+            make "n 10
+            testout :n * a :n - 1
+            `;
+            await logoTest(source, 50);
+        });
+        it('should return 120 for infix "factorial 5"', async function() {
+            let source = `
+            to factorial :n
+                if :n > 0 [
+                    output :n * factorial :n - 1
                 ]
                 output 1
             end

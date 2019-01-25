@@ -24,12 +24,12 @@ Procedure definitions look something like this:
 
 ```
 to factorial :n
-    ; No infix operators currently.
-    ; Use the prefix commands for comparisons and arithmetic.
-    if greaterp :n 0 [
+    if :n > 0 [
         ; Each procedure's argument length is known at
         ; interpretation time, so this is unambiguous.
-        output product :n factorial difference :n 1
+        ; The - operator binds more tightly to :n than
+        ; to the * operator.
+        output :n * factorial :n - 1
     ]
     output 1
 end
@@ -41,9 +41,7 @@ These details may change...
 
 Lists and instruction arguments may span across newlines, which are treated the same as spaces. Closing parentheses and brackets are required.
 
-Infix operators are not yet implemented. Use procedure operations like `sum` and `product` for arithmetic.
-
-Variables and procedures share a common namespace.
+Variables and procedures share a common namespace and are case-sensitive.
 
 Procedures may be created inside a procedure.
 
@@ -57,6 +55,7 @@ Lexical scoping (not dynamic), except that blocks executed via 'if' etc run in t
     * a `:` prefix on a word `:foo` marks it as a variable, equivalent to calling `thing "foo"` in execution
     * a `"` prefix on a word `"foo` marks it as a string literal in instruction lists
     * may use `\` as an escape character for spaces and delimiters
+    * binary operators are special instruction words
 * numbers: floating point, pos or neg, exponents ok
 * booleans: use the `true` and `false` operations
 * commands: lists that contain sequences of procedure names as words, quoted and numeric literals, and lists
@@ -64,7 +63,9 @@ Lexical scoping (not dynamic), except that blocks executed via 'if' etc run in t
 
 ## Operators
 
-There are currently no infix operators like `:a + :b` so you must use the equivalent prefix operations like `sum :a :b`. These are intended to be added in a parser update.
+Binary operators `-` `+` `*` `/` `<` `>` `=` and the unary operator `-` are available, with relative precedence rules.
+
+Note that operators bind more closely to arguments than you might expect in complex expressions: `print :x * somefunc :a - :b` will run as `print (:x * (somefunc (:a - :b)))` even though `print :x * :a - :b` will run as `print (:x * :a) - :b` as you might have expected.
 
 ## Accessors
 
@@ -82,7 +83,7 @@ To get variable values, a shortcut `:` prefix can be used as a shortcut for `thi
 
 ```
 ; let's go big
-make "atari sum :atari 400
+make "atari :atari + 400
 
 ; prints 800
 print :atari
@@ -115,7 +116,7 @@ Some commands and operations take blocks of code as instruction lists, which are
 For instance the `if` command takes a block to execute if the condition is true:
 
 ```
-if equalp :a :b [
+if :a = :b [
     print [the same]
 ]
 ```
@@ -125,8 +126,8 @@ Currently the blocks are executed in the same scope and context as the function 
 ```
 forever [
     dostuff ; may alter vars
-    if greaterp :a :b [
-        print [the same, now exiting]
+    if :a > :b [
+        print [greater, now exiting]
         ; We need the value of "a" inside the block
         output :a
     ]

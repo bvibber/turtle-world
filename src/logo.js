@@ -7,6 +7,23 @@
  * @license ISC
  */
 
+
+const reWhitespace = /^[ \t\n\r]$/;
+const reNewline = /^[\n\r]$/;
+const reDelimiters = /^[-+*\/\[\]()<>]$/;
+const reOperators =  /^[-+*\/<>]$/;
+const reDigit = /^[0-9]$/;
+
+const precedence = {
+    '*': 10,
+    '/': 10,
+    '+': 5,
+    '-': 5,
+    '<': 1,
+    '>': 1,
+    '=': 1,
+};
+
 /**
  * @typedef Atom
  * @type {(boolean|number|string|function)}
@@ -43,6 +60,10 @@ function isVariable(val) {
     return isString(val) && val[0] === ':';
 }
 
+function isOperator(val) {
+    return isString(val) && val.match(reOperators);
+}
+
 function isProcedure(val) {
     if (!isString(val)) {
         return false;
@@ -51,6 +72,11 @@ function isProcedure(val) {
         return false;
     }
     return true;
+}
+
+function isLiteral(val) {
+    return isList(val) || isBoolean(val) || isNumber(val)
+        || isQuoted(val) || isVariable(val);
 }
 
 /**
@@ -541,6 +567,10 @@ async function doMap(data, template, rest, callback) {
     }
 }
 
+function unaryMinus(a) {
+    return -a;
+}
+
 // Builtin procedures
 let builtins = {
     // Primitive setups
@@ -777,6 +807,29 @@ let builtins = {
         let body = args.pop();
         let func = this.procedure(parentScope, name, args, body);
         parentScope.bindValue(name, func);
+    },
+
+    // Infix operators
+    '+': async function(a, b) {
+        return a + b;
+    },
+    '-': async function(a, b) {
+        return a - b;
+    },
+    '*': async function(a, b) {
+        return a * b;
+    },
+    '/': async function(a, b) {
+        return a / b;
+    },
+    '<': async function(a, b) {
+        return a < b;
+    },
+    '>': async function(a, b) {
+        return a > b;
+    },
+    '=': async function(a, b) {
+        return List.equal(a, b);
     },
 
     // Arithmetric
@@ -1029,12 +1082,6 @@ export class Interpreter {
         let start = 0;
         let end = 0;
 
-        let reWhitespace = /^[ \t\n\r]$/;
-        let reNewline = /^[\n\r]$/;
-        let reDelimiters = /^[-+*\/\[\]()<>]$/;
-        let reOperators =  /^[-+*\/\<>]$/;
-        let reDigit = /^[0-9]$/;
-
         let push = () => {
             stack.push([parsed, start]);
             parsed = new ListBuilder();
@@ -1046,6 +1093,9 @@ export class Interpreter {
             return sublist;
         };
 
+        let prev = () => {
+            return source.charAt(end - 1);
+        };
         let peek = () => {
             return source.charAt(end);
         };
@@ -1098,10 +1148,21 @@ export class Interpreter {
         };
 
         let parseNumber = () => {
+            let last = prev();
             let char = peek();
             // invariant: char is '-' or a digit
             let token = char;
             consume();
+
+            // Unary minus escape
+            if (token === '-') {
+                let next = peek();
+                if (!(last === '' || last.match(reWhitespace)) || !next.match(reDigit)) {
+                    record(token);
+                    return;
+                }
+            }
+
             // integer part
             for (;;) {
                 let char = peek();
@@ -1327,17 +1388,23 @@ export class Interpreter {
         let interpreter = this;
         let scope = this.currentScope();
         let context = this.currentContext();
-        let retval;
         let iter = body;
 
-        function validateCommand(command) {
+        function validateCommand(command, binary=false) {
+            // hack for unary minus
+            if (!binary && command === '-') {
+                return unaryMinus;
+            }
+
             if (!isString(command)) {
                 throw new SyntaxError('Invalid command word: ' + command);
             }
+
             let binding = scope.getBinding(command);
             if (!binding) {
                 throw new TypeError('Unbound function: ' + command);
             }
+
             let func = binding.value;
             return func;
         }
@@ -1375,15 +1442,57 @@ export class Interpreter {
             throw new SyntaxError('Unexpected token ' + value);
         }
 
-        async function handleArg() {
+        async function handleArg(prio=0) {
+            let retval;
             if (iter.head === '(') {
                 // Variadic command
-                return await handleVariadic();
+                retval = await handleVariadic();
+            } else if (isLiteral(iter.head)) {
+                retval = await handleLiteral();
+            } else {
+                retval = await handleFixed();
             }
-            return await handleFixed();
+            if (isOperator(iter.head)) {
+                retval = await handleOperator(retval, prio);
+            }
+            return retval;
         }
 
-        async function handleVariadic() {
+        async function handleOperator(leftValue, oldprio=0) {
+            // ...
+            let node = iter;
+            let op = node.head;
+            let prio = precedence[op];
+            if (prio < oldprio) {
+                return leftValue;
+            }
+
+            let func = validateCommand(op, true);
+            iter = iter.tail;
+
+            let rightValue = await handleArg(prio);
+
+            if (isOperator(iter.head)) {
+                let other = iter.head;
+                let newprio = precedence[other];
+                if (newprio >= prio) {
+                    rightValue = await handleOperator(rightValue, newprio);
+                }
+            }
+
+            let args = [leftValue, rightValue];
+            let retval = await interpreter.performCall(func, args, body, node);
+
+            if (isOperator(iter.head)) {
+                let other = iter.head;
+                let newprio = precedence[other];
+                // chain operators
+                retval = await handleOperator(retval, newprio);
+            }
+            return retval;
+        }
+
+        async function handleVariadic(prio=0) {
             // Variadic procedure call (foo arg1 arg2 ...)
 
             // Consume the "("
@@ -1403,7 +1512,7 @@ export class Interpreter {
                 func = validateCommand(command);
                 iter = iter.tail;
             } else {
-                literal = handleLiteral();
+                literal = await handleArg();
             }
             while (!context.stop) {
                 if (iter.isEmpty()) {
@@ -1423,7 +1532,7 @@ export class Interpreter {
                         return literal;
                     }
                 }
-                let retval = await handleArg(iter.head);
+                let retval = await handleArg();
                 if (retval === undefined) {
                     throw new SyntaxError('Expected output from arg to ' + command);
                 }
@@ -1432,23 +1541,21 @@ export class Interpreter {
             return undefined;
         }
 
-        async function handleFixed() {
+        async function handleFixed(prio=0) {
             // Fixed-length procedure call or literal
             let node = iter;
             let command = node.head;
             if (command === ')') {
                 throw new SyntaxError('Unexpected close paren');
             }
-            if (!isProcedure(command)) {
-                return await handleLiteral();
-            }
-
+            // Hack for unary -
             let func = validateCommand(command);
             let args = [];
             iter = iter.tail;
             while (!context.stop) {
                 if (args.length >= func.length) {
-                    return await interpreter.performCall(func, args, body, node);
+                    let retval = await interpreter.performCall(func, args, body, node);
+                    return retval;
                 }
                 if (iter.isEmpty()) {
                     throw new SyntaxError('End of input expecting fixed arg');
@@ -1456,7 +1563,7 @@ export class Interpreter {
                 if (iter.head === ')') {
                     throw new SyntaxError('Unexpected close paren');
                 }
-                let retval = await handleArg(iter.head);
+                let retval = await handleArg(prio);
                 if (retval === undefined) {
                     throw new SyntaxError('Expected output from arg to ' + func.name);
                 }
@@ -1523,6 +1630,7 @@ export class Interpreter {
             return;
         }
 
+        let retval;
         while (!context.stop) {
             if (retval !== undefined) {
                 if (iter.isEmpty()) {
@@ -1537,11 +1645,7 @@ export class Interpreter {
                 await handleTo();
                 continue;
             }
-            if (iter.head === '(') {
-                retval = await handleVariadic();
-                continue;
-            }
-            retval = await handleFixed();
+            retval = await handleArg();
         }
         return retval;
     }

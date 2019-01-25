@@ -17,7 +17,7 @@ up back 100 right 10 down
 make "n 1
 repeat 18 [
     color item :n [black blue green red]
-    make "n sum modulo :n 4 1
+    make "n 1 + remainder :n 4
     forward 200 right 10 back 200 right 10
 ]
 
