@@ -370,9 +370,9 @@ describe('Logo', function() {
                     print []
                     drink :n
                 ]
-                end
+            end
 
-                drink 99
+            drink 99
             `;
             await logoTest(source, undefined);
         })
