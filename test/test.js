@@ -218,8 +218,14 @@ describe('Logo', function() {
         it('Should handle paren groupings 2', async function() {
             await logoTest('testout 48 * (0.3 + 0.2)', 24);
         });
-        it('Should run print (2 + 3) * 4', async function() {
+        it('Should get 20 for print (2 + 3) * 4', async function() {
             await logoPrint(`print (2 + 3) * 4`, '20');
+        })
+        it('Should get 14 for print 2 + 3 * 4', async function() {
+            await logoPrint(`print 2 + 3 * 4`, '14');
+        })
+        it('Precendce: should get 14 for print 3 * 4 + 2', async function() {
+            await logoPrint(`print 3 * 4 + 2`, '14');
         })
     });
     describe('print command', function() {
