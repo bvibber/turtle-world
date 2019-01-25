@@ -202,6 +202,20 @@ describe('Logo', function() {
             await logoTest(`make "n 32 testout thing "n`, 32);
         });
     });
+    describe('Infix operators', function() {
+        it('Should add 1 + 2 -> 3', async function() {
+            await logoTest('testout 1 + 2', 3);
+        });
+        it('Should multiply 3 * 4 -> 12', async function() {
+            await logoTest('testout 3 * 4', 12);
+        });
+        it('Should handle 1 * 2 + 3 * 4 -> 14', async function() {
+            await logoTest('testout 1 * 2 + 3 * 4', 14);
+        });
+        it('Should handle paren groupings', async function() {
+            await logoTest('testout 48 * (0.3 + 0.2)', 24);
+        })
+    });
     describe('print command', function() {
         it('should print string literals', async function() {
             await logoPrint(`print "a`, 'a');
@@ -220,7 +234,7 @@ describe('Logo', function() {
             await logoPrint(`print "*`, '*');
         });
         it('should fail with string literals with initial delimiter and unescaped further delims', async function() {
-            await logoTry(`print "****`, TypeError); // should be SyntaxError
+            await logoTry(`print "****`, SyntaxError);
         });
         it('should handle quoted words with funky escaping', async function() {
             await logoPrint(`print "(hello\\)`, '(hello)');

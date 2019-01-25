@@ -17,6 +17,12 @@
  * @type {(Atom|List)}
  */
 
+const reWhitespace = /^[ \t\n\r]$/;
+const reNewline = /^[\n\r]$/;
+const reDelimiters = /^[-+*\/\[\]()<>=]$/;
+const reOperators =  /^[-+*\/<>=]$/;
+const reDigit = /^[0-9]$/;
+
 /**
  * @param {*} val 
  * @returns {boolean}
@@ -51,6 +57,10 @@ function isProcedure(val) {
         return false;
     }
     return true;
+}
+
+function isOperator(val) {
+    return isString(val) && val.match(reOperators);
 }
 
 /**
@@ -779,7 +789,30 @@ let builtins = {
         parentScope.bindValue(name, func);
     },
 
-    // Arithmetric
+    // Infix operators
+    '+': async function(a, b) {
+        return a + b;
+    },
+    '-': async function(a, b) {
+        return a - b;
+    },
+    '*': async function(a, b) {
+        return a * b;
+    },
+    '/': async function(a, b) {
+        return a / b;
+    },
+    '<': async function(a, b) {
+        return a < b;
+    },
+    '>': async function(a, b) {
+        return a > b;
+    },
+    '=': async function(a, b) {
+        return List.equal(a, b);
+    },
+
+    // Arithmetric procedures
     sum: async function(a, b) {
         return a + b;
     },
@@ -1028,12 +1061,6 @@ export class Interpreter {
         let stack = [];
         let start = 0;
         let end = 0;
-
-        let reWhitespace = /^[ \t\n\r]$/;
-        let reNewline = /^[\n\r]$/;
-        let reDelimiters = /^[-+*\/\[\]()<>]$/;
-        let reOperators =  /^[-+*\/\<>]$/;
-        let reDigit = /^[0-9]$/;
 
         let push = () => {
             stack.push([parsed, start]);
@@ -1324,226 +1351,152 @@ export class Interpreter {
     }
 
     async evaluate(body) {
-        let interpreter = this;
         let scope = this.currentScope();
-        let context = this.currentContext();
-        let retval;
-        let iter = body;
 
-        function validateCommand(command) {
-            if (!isString(command)) {
-                throw new SyntaxError('Invalid command word: ' + command);
-            }
+        let literal = function(val) {
+            return val;
+        };
+        let variable = function(val) {
+            return scope.get(val);
+        };
+        let parentheses = function(val) {
+            return val;
+        };
+
+        // An expression may be:
+        // number
+        // quoted-word
+        // variable
+        // proc e1 e2 ... eN (fixed length)
+        // e1 op e2
+        // ( e ) (forces var-length processing)
+
+        let node; // List node of the current command or literal
+        let func; // func of the current command, or a local func
+        let args = [];
+        let variadic = false;
+        let stack = [];
+        let val;
+        let iter;
+
+        let lookup = (command) => {
             let binding = scope.getBinding(command);
             if (!binding) {
-                throw new TypeError('Unbound function: ' + command);
+                throw new ReferenceError('Undefined procedure ' + command);
             }
-            let func = binding.value;
-            return func;
-        }
+            return binding.value;
+        };
 
-        async function handleLiteral() {
-            let node = iter;
-            let value = iter.head;
-            iter = iter.tail;
-            if (isList(value) || isBoolean(value) || isNumber(value)) {
-                if (interpreter.onvalue) {
-                    await interpreter.onvalue(value, body, node);
+        let push = (func_, args_, variadic_) => {
+            stack.push([node, func, args, variadic, val]);
+            node = iter;
+            func = func_;
+            args = args_;
+            variadic = variadic_;
+            val = undefined;
+        };
+
+        let pop = () => {
+            [node, func, args, variadic, val] = stack.pop();
+        };
+        let callAndPop = async () => {
+            let retval;
+            if (func) {
+                retval = await this.performCall(func, args, body, node);
+            }
+            pop();
+            val = retval;
+        };
+        let check = async () => {
+            while (func) {
+                if (val !== undefined) {
+                    args.push(val);
+                    val = undefined;
                 }
-                return value;
-            }
-            if (!isString(value)) {
-                throw new SyntaxError('Unexpected token ' + value);
-            }
-            let first = value[0];
-            let rest = value.substr(1);
-            if (first === '"') {
-                // String literal
-                if (interpreter.onvalue) {
-                    await interpreter.onvalue(rest, body, node);
-                }
-                return rest;
-            }
-            if (first === ':') {
-                // Variable get
-                let val = scope.get(rest);
-                if (interpreter.onvalue) {
-                    await interpreter.onvalue(val, body, node);
-                }
-                return val;
-            }
-            throw new SyntaxError('Unexpected token ' + value);
-        }
-
-        async function handleArg() {
-            if (iter.head === '(') {
-                // Variadic command
-                return await handleVariadic();
-            }
-            return await handleFixed();
-        }
-
-        async function handleVariadic() {
-            // Variadic procedure call (foo arg1 arg2 ...)
-
-            // Consume the "("
-            iter = iter.tail;
-
-            // Variadic command
-            if (iter.isEmpty()) {
-                throw new SyntaxError('End of input expecting variadic command');
-            }
-
-            let node = iter;
-            let command = node.head;
-            let literal;
-            let func;
-            let args = [];
-            if (isProcedure(command)) {
-                func = validateCommand(command);
-                iter = iter.tail;
-            } else {
-                literal = handleLiteral();
-            }
-            while (!context.stop) {
-                if (iter.isEmpty()) {
-                    throw new SyntaxError('End of input expecting variadic arg');
-                }
-                if (iter.head === ')') {
-                    iter = iter.tail;
-                    if (func) {
-                        if (args.length < func.length) {
-                            throw new SyntaxError('Not enough args to ' + command);
-                        }
-                        return await interpreter.performCall(func, args, body, node);
-                    } else {
-                        if (args.length) {
-                            throw new SyntaxError('Got unexpected args to a literal');
-                        }
-                        return literal;
+                if (variadic) {
+                    // check for EOF
+                    // we'll check for ')' later!
+                    if (!iter.isEmpty()) {
+                        // Keep reading more arguments.
+                        return;
+                    }
+                } else {
+                    if (args.length < func.length) {
+                        // Keep reading more arguments.
+                        return;
                     }
                 }
-                let retval = await handleArg(iter.head);
-                if (retval === undefined) {
-                    throw new SyntaxError('Expected output from arg to ' + command);
-                }
-                args.push(retval);
+                await callAndPop();
             }
-            return undefined;
         }
 
-        async function handleFixed() {
-            // Fixed-length procedure call or literal
-            let node = iter;
-            let command = node.head;
-            if (command === ')') {
-                throw new SyntaxError('Unexpected close paren');
-            }
-            if (!isProcedure(command)) {
-                return await handleLiteral();
-            }
+        for (iter = body; !iter.isEmpty(); iter = iter.tail) {
+            let word = iter.head;
 
-            let func = validateCommand(command);
-            let args = [];
-            iter = iter.tail;
-            while (!context.stop) {
-                if (args.length >= func.length) {
-                    return await interpreter.performCall(func, args, body, node);
-                }
-                if (iter.isEmpty()) {
-                    throw new SyntaxError('End of input expecting fixed arg');
-                }
-                if (iter.head === ')') {
-                    throw new SyntaxError('Unexpected close paren');
-                }
-                let retval = await handleArg(iter.head);
-                if (retval === undefined) {
-                    throw new SyntaxError('Expected output from arg to ' + func.name);
-                }
-                args.push(retval);
-            }
-            return undefined;
-        }
-
-        async function handleTo() {
-            let node = iter;
-
-            // consume "to"
-            iter = iter.tail;
-
-            if (iter.isEmpty()) {
-                throw new SyntaxError('End of input expecting procedure name');
-            }
-            let name = iter.head;
-            if (!isString(name)) {
-                throw new SyntaxError('Procedure name must be a word');
-            }
-            // consume name
-            iter = iter.tail;
-
-            let args = [];
-
-            // Collect any :arg names
-            for (;;) {
-                if (iter.isEmpty()) {
-                    throw new SyntaxError('End of input reading procedure definition');
-                }
-                let arg = iter.head;
-                if (isString(arg) && arg[0] === ':') {
-                    args.push(arg.substr(1));
-                    iter = iter.tail;
+            if (val !== undefined) {
+                if (isOperator(word)) {
+                    // fixme op precedence check
+                    push(lookup(word), [val], false);
                     continue;
                 }
-                break;
             }
 
-            // Collect the body instructions
-            let body = new ListBuilder();
-            for(;;) {
-                if (iter.isEmpty()) {
-                    throw new SyntaxError('End of input reading procedure definition');
+            await check();
+
+            if (word === ')') {
+                if (variadic) {
+                    await callAndPop();
+                    continue;
                 }
-                let instruction = iter.head;
-                if (instruction === 'end') {
-                    // Consume 'end'
-                    iter = iter.tail;
-                    break;
-                }
-                // Copy the source-map info from the parser
-                body.push(instruction);
-                let map = interpreter.sourceForNode(iter);
-                if (map) {
-                    interpreter.sourceMap.set(body.end, map);
-                }
-                iter = iter.tail;
+                throw new SyntaxError('Unexpected close paren');
             }
 
-            let proc = interpreter.procedure(interpreter.currentScope(), name, args, body.list);
-            interpreter.currentScope().set(name, proc);
-            return;
-        }
-
-        while (!context.stop) {
-            if (retval !== undefined) {
-                if (iter.isEmpty()) {
-                    return retval;
-                }
-                throw new SyntaxError('Extra instructions after a value-returning expression: ' + iter.head);
-            }
-            if (iter.isEmpty()) {
-                break;
-            }
-            if (iter.head === 'to') {
-                await handleTo();
+            if (isNumber(word) || isBoolean(word) || isList(word)) {
+                push(literal, [word], false);
+                await check();
                 continue;
             }
-            if (iter.head === '(') {
-                retval = await handleVariadic();
+            
+            if (isQuoted(word)) {
+                push(literal, [word.substr(1)], false);
+                await check();
                 continue;
             }
-            retval = await handleFixed();
+            
+            if (isVariable(word)) {
+                push(variable, [word.substr(1)], false);
+                await check();
+                continue;
+            }
+            
+            if (isOperator(word)) {
+                throw new SyntaxError('Unexpected infix operator ' + word);
+            }
+
+            if (word === '(') {
+                push(parentheses, [], true);
+                continue;
+            }
+
+            push(lookup(word), [], false);
         }
-        return retval;
+        // Reached end of input
+        while (stack.length) {
+            await callAndPop();
+            if (func && val !== undefined) {
+                args.push(val);
+            }
+        }
+        if (variadic) {
+            throw new SyntaxError('End of input while parens open');
+        } else {
+            if (func) {
+                throw new SyntaxError('Not enough parameters to ' + func.name);
+            } else {
+                // Ended cleanly.
+                return val;
+            }
+        }
     }
 
     // Parse and execute a string in the global context
