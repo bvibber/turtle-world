@@ -779,6 +779,29 @@ let builtins = {
         parentScope.bindValue(name, func);
     },
 
+    // Infix operators
+    '+': async function(a, b) {
+        return a + b;
+    },
+    '-': async function(a, b) {
+        return a - b;
+    },
+    '*': async function(a, b) {
+        return a * b;
+    },
+    '/': async function(a, b) {
+        return a / b;
+    },
+    '<': async function(a, b) {
+        return a < b;
+    },
+    '>': async function(a, b) {
+        return a > b;
+    },
+    '=': async function(a, b) {
+        return List.equal(a, b);
+    },
+
     // Arithmetric
     sum: async function(a, b) {
         return a + b;
