@@ -1443,7 +1443,7 @@ export class Interpreter {
                 func = validateCommand(command);
                 iter = iter.tail;
             } else {
-                literal = handleLiteral();
+                literal = await handleLiteral();
                 if (!iter.isEmpty() && isOperator(iter.head)) {
                     literal = await handleOperator(literal);
                 }
@@ -1454,21 +1454,19 @@ export class Interpreter {
                 }
                 if (iter.head === ')') {
                     iter = iter.tail;
+                    let retval;
                     if (func) {
                         if (args.length < func.length) {
                             throw new SyntaxError('Not enough args to ' + command);
                         }
-                        let retval = await interpreter.performCall(func, args, body, node);
-                        if (!iter.isEmpty() && isOperator(iter.head)) {
-                            retval = await handleOperator(retval);
-                        }
-                        return retval;
+                        retval = await interpreter.performCall(func, args, body, node);
                     } else {
                         if (args.length) {
                             throw new SyntaxError('Got unexpected args to a literal');
                         }
-                        return literal;
+                        retval = literal;
                     }
+                    return retval;
                 }
                 let retval = await handleArg(iter.head);
                 if (retval === undefined) {
