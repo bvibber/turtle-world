@@ -7,6 +7,13 @@
  * @license ISC
  */
 
+
+const reWhitespace = /^[ \t\n\r]$/;
+const reNewline = /^[\n\r]$/;
+const reDelimiters = /^[-+*\/\[\]()<>]$/;
+const reOperators =  /^[-+*\/<>]$/;
+const reDigit = /^[0-9]$/;
+
 /**
  * @typedef Atom
  * @type {(boolean|number|string|function)}
@@ -41,6 +48,10 @@ function isQuoted(val) {
 
 function isVariable(val) {
     return isString(val) && val[0] === ':';
+}
+
+function isOperator(val) {
+    return isString(val) && val.match(reOperators);
 }
 
 function isProcedure(val) {
@@ -1052,12 +1063,6 @@ export class Interpreter {
         let start = 0;
         let end = 0;
 
-        let reWhitespace = /^[ \t\n\r]$/;
-        let reNewline = /^[\n\r]$/;
-        let reDelimiters = /^[-+*\/\[\]()<>]$/;
-        let reOperators =  /^[-+*\/\<>]$/;
-        let reDigit = /^[0-9]$/;
-
         let push = () => {
             stack.push([parsed, start]);
             parsed = new ListBuilder();
@@ -1406,6 +1411,18 @@ export class Interpreter {
             return await handleFixed();
         }
 
+        async function handleOperator(leftValue) {
+            // ...
+            let node = iter;
+            let op = node.head;
+            let func = validateCommand(op);
+            iter = iter.tail;
+            // @fixme operator precedence order
+            let rightValue = await handleArg();
+            let args = [leftValue, rightValue];
+            return await interpreter.performCall(func, args, body, node);
+        }
+
         async function handleVariadic() {
             // Variadic procedure call (foo arg1 arg2 ...)
 
@@ -1427,6 +1444,9 @@ export class Interpreter {
                 iter = iter.tail;
             } else {
                 literal = handleLiteral();
+                if (!iter.isEmpty() && isOperator(iter.head)) {
+                    literal = await handleOperator(literal);
+                }
             }
             while (!context.stop) {
                 if (iter.isEmpty()) {
@@ -1449,6 +1469,9 @@ export class Interpreter {
                 let retval = await handleArg(iter.head);
                 if (retval === undefined) {
                     throw new SyntaxError('Expected output from arg to ' + command);
+                }
+                if (!iter.isEmpty() && isOperator(iter.head)) {
+                    retval = await handleOperator(retval);
                 }
                 args.push(retval);
             }
@@ -1482,6 +1505,9 @@ export class Interpreter {
                 let retval = await handleArg(iter.head);
                 if (retval === undefined) {
                     throw new SyntaxError('Expected output from arg to ' + func.name);
+                }
+                if (!iter.isEmpty() && isOperator(iter.head)) {
+                    retval = await handleOperator(retval);
                 }
                 args.push(retval);
             }
