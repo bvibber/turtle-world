@@ -392,66 +392,6 @@ export class List {
 List.empty = new List();
 
 /**
- * Helper class for state machines running through iterators.
- */
-class StateMachine {
-    /**
-     * Must have handlers for `'start'` and `'end'` states.
-     * Handler methods take one parameter, which is either
-     * a value from the iterator or `undefined` indicating
-     * no more data. Return value is the next state.
-     *
-     * Failing to return a new state is treated as an error,
-     * as is returning a state that has no handler. Final
-     * state after end-of-data must be `'end'`.
-     *
-     * @param {object} handlers 
-     */
-    constructor(handlers) {
-        this.handlers = handlers;
-        this.state = 'idle';
-    }
-
-    /**
-     * Items from the iterable will be fed into the handler
-     * methods based on their returned states.
-     *
-     * @param {Iterable} iterable - source of data to run through
-     */
-    run(iterable) {
-        this.state = 'start';
-
-        for (let item of iterable) {
-            let handler = this.handlers[this.state];
-            if (!handler) {
-                throw new Error('Unexpected state ' + this.state);
-            }
-            let next = handler.call(this, item);
-            if (!next) {
-                throw new Error('Unexpected input ' + item + ' in state ' + this.state);
-            }
-            this.state = next;
-            if (this.state === 'end') {
-                // Requested an early end!
-                break;
-            }
-        }
-
-        let handler = this.handlers[this.state];
-        if (!handler) {
-            throw new Error('Unexpected state ' + this.state);
-        }
-        let newState = handler.call(this, undefined);
-        if (!newState) {
-            throw new Error('Unexpected end of input in state ' + this.state);
-        }
-        if (newState !== 'end') {
-            throw new Error('Ended in inconsistent state ' + newState);
-        }
-    }
-}
-
-/**
  * Wrapper for variable bindings.
  */
 export class Binding {
