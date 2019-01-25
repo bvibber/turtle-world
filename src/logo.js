@@ -1434,20 +1434,33 @@ export class Interpreter {
             let node = iter;
             let op = node.head;
             let prio = precedence[op];
-            //console.log('prio', oldprio, prio, op);
             if (prio < oldprio) {
-                /*
-                console.log('skipping low prio', oldprio, prio, op);
                 return leftValue;
-                */
             }
 
             let func = validateCommand(op);
             iter = iter.tail;
 
             let rightValue = await handleArg(prio);
+
+            console.log(iter.head);
+            if (isOperator(iter.head)) {
+                let other = iter.head;
+                let newprio = precedence[other];
+                console.log(op, prio, '->', other, newprio);
+                if (precedence[iter.head] >= prio) {
+                    rightValue = await handleOperator(rightValue, newprio);
+                }
+            }
+
             let args = [leftValue, rightValue];
-            return await interpreter.performCall(func, args, body, node);
+            let retval = await interpreter.performCall(func, args, body, node);
+
+            if (isOperator(iter.head)) {
+                // chain operators
+                retval = await handleOperator(retval);
+            }
+            return retval;
         }
 
         async function handleVariadic(prio=0) {
