@@ -358,5 +358,23 @@ describe('Logo', function() {
             `;
             await logoTest(source, undefined);
         });
+        it('should not error on 99 bottles of beer', async function() {
+            let source = `
+            to drink :n
+                (print :n [bottles of beer on the wall])
+                (print :n [bottles of beer])
+                print [take one down, pass it around]
+                make "n difference :n 1
+                if greaterp :n 0 [
+                    (print :n [bottles of beer on the wall])
+                    print []
+                    drink :n
+                ]
+                end
+
+                drink 99
+            `;
+            await logoTest(source, undefined);
+        })
     });
 });
