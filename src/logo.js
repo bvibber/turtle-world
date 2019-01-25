@@ -1089,9 +1089,9 @@ export class Interpreter {
         let start = 0;
         let end = 0;
 
-        let reWhitespace = /^[ \t]$/;
+        let reWhitespace = /^[ \t\n\r]$/;
         let reNewline = /^[\n\r]$/;
-        let reDelimiters = /^[-+*\/\[\]()<> \t\n\r]$/;
+        let reDelimiters = /^[-+*\/\[\]()<>]$/;
         let reOperators =  /^[-+*\/\<>]$/;
         let reDigit = /^[0-9]$/;
 
@@ -1219,7 +1219,7 @@ export class Interpreter {
             }
 
             char = peek();
-            if (!char || char.match(reDelimiters)) {
+            if (!char || char.match(reDelimiters) || char.match(reWhitespace)) {
                 record(parseFloat(token));
                 return;
             }
@@ -1233,8 +1233,20 @@ export class Interpreter {
                     record(token);
                     return;
                 }
-                if (char.match(reDelimiters) && token !== '"' ) {
-                    // First delimiter char doesn't have to be quoted
+                if (char.match(reDelimiters)) {
+                    if (token === '"') {
+                        if (char !== '[' && char !== ']') {
+                            // First quoted delimiter char doesn't have to be escaped
+                            // unless it's a bracket.
+                            token += char;
+                            consume();
+                            continue;
+                        }
+                    }
+                    record(token);
+                    return;
+                }
+                if (char.match(reWhitespace)) {
                     record(token);
                     return;
                 }

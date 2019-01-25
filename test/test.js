@@ -228,6 +228,12 @@ describe('Logo', function() {
         it('should fail on quoted words with wrong funky escaping', async function() {
             await logoTry(`print "(hello)`, SyntaxError);
         });
+        it('should fail on quoted word with unescaped bracket', async function() {
+            await logoTry(`print "[`, SyntaxError);
+        });
+        it('should work on quoted word with escaped bracket', async function() {
+            await logoPrint(`print "\\[`, '[');
+        });
     });
     describe("Standard library", function() {
         // booleans
