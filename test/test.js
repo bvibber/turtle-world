@@ -218,6 +218,9 @@ describe('Logo', function() {
         it('Should handle paren groupings 2', async function() {
             await logoTest('testout 48 * (0.3 + 0.2)', 24);
         });
+        it('Should run print (2 + 3) * 4', async function() {
+            await logoPrint(`print (2 + 3) * 4`, '20');
+        })
     });
     describe('print command', function() {
         it('should print string literals', async function() {

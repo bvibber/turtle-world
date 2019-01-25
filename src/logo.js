@@ -1466,6 +1466,9 @@ export class Interpreter {
                         }
                         retval = literal;
                     }
+                    if (!iter.isEmpty() && isOperator(iter.head)) {
+                        retval = await handleOperator(literal);
+                    }
                     return retval;
                 }
                 let retval = await handleArg(iter.head);
