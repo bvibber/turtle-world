@@ -310,13 +310,10 @@ describe('Logo', function() {
         it('should return 120 for "factorial 5"', async function() {
             let source = `
             to factorial :n
-                if greaterp :n 1 [
+                if greaterp :n 0 [
                     output product :n factorial difference :n 1
                 ]
-                if equalp :n 1 [
-                    output 1
-                ]
-                output 0
+                output 1
             end
             testout factorial 5
             `;

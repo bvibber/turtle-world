@@ -26,15 +26,12 @@ Procedure definitions look something like this:
 to factorial :n
     ; No infix operators currently.
     ; Use the prefix commands for comparisons and arithmetic.
-    if greaterp :n 1 [
+    if greaterp :n 0 [
         ; Each procedure's argument length is known at
         ; interpretation time, so this is unambiguous.
         output product :n factorial difference :n 1
     ]
-    if equalp :n 1 [
-        output 1
-    ]
-    output 0
+    output 1
 end
 ```
 
