@@ -1458,7 +1458,11 @@ export class Interpreter {
                         if (args.length < func.length) {
                             throw new SyntaxError('Not enough args to ' + command);
                         }
-                        return await interpreter.performCall(func, args, body, node);
+                        let retval = await interpreter.performCall(func, args, body, node);
+                        if (!iter.isEmpty() && isOperator(iter.head)) {
+                            retval = await handleOperator(retval);
+                        }
+                        return retval;
                     } else {
                         if (args.length) {
                             throw new SyntaxError('Got unexpected args to a literal');
@@ -1486,7 +1490,11 @@ export class Interpreter {
                 throw new SyntaxError('Unexpected close paren');
             }
             if (!isProcedure(command)) {
-                return await handleLiteral();
+                let literal = await handleLiteral();
+                if (!iter.isEmpty() && isOperator(iter.head)) {
+                    literal = await handleOperator(literal);
+                }
+                return literal;
             }
 
             let func = validateCommand(command);
@@ -1494,7 +1502,11 @@ export class Interpreter {
             iter = iter.tail;
             while (!context.stop) {
                 if (args.length >= func.length) {
-                    return await interpreter.performCall(func, args, body, node);
+                    let retval = await interpreter.performCall(func, args, body, node);
+                    if (!iter.isEmpty() && isOperator(iter.head)) {
+                        retval = await handleOperator(retval);
+                    }
+                    return retval;
                 }
                 if (iter.isEmpty()) {
                     throw new SyntaxError('End of input expecting fixed arg');
@@ -1505,9 +1517,6 @@ export class Interpreter {
                 let retval = await handleArg(iter.head);
                 if (retval === undefined) {
                     throw new SyntaxError('Expected output from arg to ' + func.name);
-                }
-                if (!iter.isEmpty() && isOperator(iter.head)) {
-                    retval = await handleOperator(retval);
                 }
                 args.push(retval);
             }
