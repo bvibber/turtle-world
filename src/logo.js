@@ -74,6 +74,11 @@ function isProcedure(val) {
     return true;
 }
 
+function isLiteral(val) {
+    return isList(val) || isBoolean(val) || isNumber(val)
+        || isQuoted(val) || isVariable(val);
+}
+
 /**
  * @param {*} val 
  * @returns {boolean}
@@ -1418,10 +1423,13 @@ export class Interpreter {
             let retval;
             if (iter.head === '(') {
                 // Variadic command
-                retval = await handleVariadic(prio);
+                retval = await handleVariadic();
+            } else if (isLiteral(iter.head)) {
+                retval = await handleLiteral();
             } else {
-                retval = await handleFixed(prio);
+                retval = await handleFixed();
             }
+            console.log('TRAILING ITER IS', !iter.isEmpty() && iter.head);
             if (isOperator(iter.head)) {
                 retval = await handleOperator(retval, prio);
             }
@@ -1435,6 +1443,7 @@ export class Interpreter {
             let op = node.head;
             let prio = precedence[op];
             if (prio < oldprio) {
+                console.log('LEFT SELECT', op, [leftValue], oldprio, prio);
                 return leftValue;
             }
 
@@ -1443,22 +1452,25 @@ export class Interpreter {
 
             let rightValue = await handleArg(prio);
 
-            console.log(iter.head);
             if (isOperator(iter.head)) {
                 let other = iter.head;
                 let newprio = precedence[other];
-                console.log(op, prio, '->', other, newprio);
-                if (precedence[iter.head] >= prio) {
+                console.log('RIGHT SELECT', op, [leftValue, rightValue], oldprio, prio);
+                if (newprio >= prio) {
                     rightValue = await handleOperator(rightValue, newprio);
                 }
             }
 
+            console.log('BINARY OP', op, [leftValue, rightValue], oldprio);
             let args = [leftValue, rightValue];
             let retval = await interpreter.performCall(func, args, body, node);
 
             if (isOperator(iter.head)) {
+                let other = iter.head;
+                let newprio = precedence[other];
                 // chain operators
-                retval = await handleOperator(retval);
+                console.log('CHAIN SELECT', op, [leftValue, rightValue], oldprio, prio);
+                retval = await handleOperator(retval, newprio);
             }
             return retval;
         }
@@ -1520,10 +1532,6 @@ export class Interpreter {
             let command = node.head;
             if (command === ')') {
                 throw new SyntaxError('Unexpected close paren');
-            }
-            if (!isProcedure(command)) {
-                let lit = await handleLiteral();
-                return lit;
             }
             let func = validateCommand(command);
             let args = [];

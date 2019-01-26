@@ -345,6 +345,42 @@ describe('Logo', function() {
             `;
             await logoTest(source, 120);
         });
+        it('should work on this thing', async function() {
+            let source = `
+            to a :n
+              output 5
+            end
+            make "n 10
+            testout :n * a :n + 1
+            `;
+            await logoTest(source, 50);
+        });
+        /*
+        it('should work on this thing2', async function() {
+            let source = `
+            to a :n
+              output 5
+            end
+            make "n 10
+            testout :n * a :n - 1
+            `;
+            await logoTest(source, 50);
+        });
+        */
+        /*
+        it('should return 120 for infix "factorial 5"', async function() {
+            let source = `
+            to factorial :n
+                if :n > 0 [
+                    output :n * factorial :n - 1
+                ]
+                output 1
+            end
+            testout factorial 5
+            `;
+            await logoTest(source, 120);
+        });
+        */
         it('should return no output and no error for 12 days of xmas', async function() {
             let source = `
             to day_of_xmas :day
