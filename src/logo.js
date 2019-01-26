@@ -1390,7 +1390,6 @@ export class Interpreter {
         }
 
         async function handleLiteral() {
-            console.log('handleLiteral', iter.head);
             let node = iter;
             let value = iter.head;
             iter = iter.tail;
@@ -1424,7 +1423,6 @@ export class Interpreter {
         }
 
         async function handleArg(prio=0) {
-            console.log('handleArg', iter.head);
             let retval;
             if (iter.head === '(') {
                 // Variadic command
@@ -1434,7 +1432,6 @@ export class Interpreter {
             } else {
                 retval = await handleFixed();
             }
-            console.log('TRAILING ITER IS', !iter.isEmpty() && iter.head);
             if (isOperator(iter.head)) {
                 retval = await handleOperator(retval, prio);
             }
@@ -1442,13 +1439,11 @@ export class Interpreter {
         }
 
         async function handleOperator(leftValue, oldprio=0) {
-            console.log('handleOperator', iter.head);
             // ...
             let node = iter;
             let op = node.head;
             let prio = precedence[op];
             if (prio < oldprio) {
-                console.log('LEFT SELECT', op, [leftValue], oldprio, prio);
                 return leftValue;
             }
 
@@ -1460,13 +1455,11 @@ export class Interpreter {
             if (isOperator(iter.head)) {
                 let other = iter.head;
                 let newprio = precedence[other];
-                console.log('RIGHT SELECT', op, [leftValue, rightValue], oldprio, prio);
                 if (newprio >= prio) {
                     rightValue = await handleOperator(rightValue, newprio);
                 }
             }
 
-            console.log('BINARY OP', op, [leftValue, rightValue], oldprio);
             let args = [leftValue, rightValue];
             let retval = await interpreter.performCall(func, args, body, node);
 
@@ -1474,14 +1467,12 @@ export class Interpreter {
                 let other = iter.head;
                 let newprio = precedence[other];
                 // chain operators
-                console.log('CHAIN SELECT', op, [leftValue, rightValue], oldprio, prio);
                 retval = await handleOperator(retval, newprio);
             }
             return retval;
         }
 
         async function handleVariadic(prio=0) {
-            console.log('handleVariadic', iter.head);
             // Variadic procedure call (foo arg1 arg2 ...)
 
             // Consume the "("
@@ -1531,7 +1522,6 @@ export class Interpreter {
         }
 
         async function handleFixed(prio=0) {
-            console.log('handleFixed', iter.head);
             // Fixed-length procedure call or literal
             let node = iter;
             let command = node.head;
