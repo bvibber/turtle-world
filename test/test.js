@@ -243,7 +243,7 @@ describe('Logo', function() {
         it('unary minus on func', async function() {
             await logoTest(`
             to foo
-              output -1
+              output 7
             end
             testout -foo`, -7);
         });

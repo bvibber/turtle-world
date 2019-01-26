@@ -567,6 +567,10 @@ async function doMap(data, template, rest, callback) {
     }
 }
 
+function unaryMinus(a) {
+    return -a;
+}
+
 // Builtin procedures
 let builtins = {
     // Primitive setups
@@ -1089,6 +1093,9 @@ export class Interpreter {
             return sublist;
         };
 
+        let prev = () => {
+            return source.charAt(end - 1);
+        };
         let peek = () => {
             return source.charAt(end);
         };
@@ -1141,10 +1148,21 @@ export class Interpreter {
         };
 
         let parseNumber = () => {
+            let last = prev();
             let char = peek();
             // invariant: char is '-' or a digit
             let token = char;
             consume();
+
+            // Unary minus escape
+            if (token === '-') {
+                let next = peek();
+                if (!(last === '' || last.match(reWhitespace)) || !next.match(reDigit)) {
+                    record(token);
+                    return;
+                }
+            }
+
             // integer part
             for (;;) {
                 let char = peek();
@@ -1203,12 +1221,7 @@ export class Interpreter {
 
             char = peek();
             if (!char || char.match(reDelimiters) || char.match(reWhitespace)) {
-                if (token === '-') {
-                    // operator
-                    record(token);
-                } else {
-                    record(parseFloat(token));
-                }
+                record(parseFloat(token));
                 return;
             }
         };
@@ -1377,14 +1390,21 @@ export class Interpreter {
         let context = this.currentContext();
         let iter = body;
 
-        function validateCommand(command) {
+        function validateCommand(command, binary=false) {
+            // hack for unary minus
+            if (!binary && command === '-') {
+                return unaryMinus;
+            }
+
             if (!isString(command)) {
                 throw new SyntaxError('Invalid command word: ' + command);
             }
+
             let binding = scope.getBinding(command);
             if (!binding) {
                 throw new TypeError('Unbound function: ' + command);
             }
+
             let func = binding.value;
             return func;
         }
@@ -1447,7 +1467,7 @@ export class Interpreter {
                 return leftValue;
             }
 
-            let func = validateCommand(op);
+            let func = validateCommand(op, true);
             iter = iter.tail;
 
             let rightValue = await handleArg(prio);
@@ -1528,6 +1548,7 @@ export class Interpreter {
             if (command === ')') {
                 throw new SyntaxError('Unexpected close paren');
             }
+            // Hack for unary -
             let func = validateCommand(command);
             let args = [];
             iter = iter.tail;
