@@ -355,7 +355,6 @@ describe('Logo', function() {
             `;
             await logoTest(source, 50);
         });
-        /*
         it('should work on this thing2', async function() {
             let source = `
             to a :n
@@ -366,8 +365,6 @@ describe('Logo', function() {
             `;
             await logoTest(source, 50);
         });
-        */
-        /*
         it('should return 120 for infix "factorial 5"', async function() {
             let source = `
             to factorial :n
@@ -380,7 +377,6 @@ describe('Logo', function() {
             `;
             await logoTest(source, 120);
         });
-        */
         it('should return no output and no error for 12 days of xmas', async function() {
             let source = `
             to day_of_xmas :day

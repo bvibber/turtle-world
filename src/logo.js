@@ -1203,7 +1203,12 @@ export class Interpreter {
 
             char = peek();
             if (!char || char.match(reDelimiters) || char.match(reWhitespace)) {
-                record(parseFloat(token));
+                if (token === '-') {
+                    // operator
+                    record(token);
+                } else {
+                    record(parseFloat(token));
+                }
                 return;
             }
         };
