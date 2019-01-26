@@ -227,6 +227,38 @@ describe('Logo', function() {
         it('Precendce: should get 14 for print 3 * 4 + 2', async function() {
             await logoPrint(`print 3 * 4 + 2`, '14');
         })
+        it('Precendce: should get 14 for print 3 * 4 + 2', async function() {
+            await logoPrint(`print 3 * 4 + 2`, '14');
+        })
+
+        it('binary minus', async function() {
+            await logoTest(`testout 7 - 1`, 6);
+        });
+        it('binary minus no space', async function() {
+            await logoTest(`testout 7-1`, 6);
+        });
+        it('negative number minus', async function() {
+            await logoTest(`testout product 7 -1`, -7);
+        });
+        it('unary minus on func', async function() {
+            await logoTest(`
+            to foo
+              output -1
+            end
+            testout -foo`, -7);
+        });
+        it('unary minus on num with space', async function() {
+            await logoTest(`testout - 3`, -3);
+        });
+        it('binary and unary minus together', async function() {
+            await logoTest(`testout -3 - -2`, -1);
+        });
+        it('binary vs unary 1', async function() {
+            await logoTest(`testout 3 * -4`, -12);
+        });
+        it('binary vs unary 2', async function() {
+            await logoTest(`testout 3 + 4 - 5`, 2);
+        });
     });
     describe('print command', function() {
         it('should print string literals', async function() {
