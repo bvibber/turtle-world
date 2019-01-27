@@ -20,6 +20,8 @@ The Logo engine may be used in Node.js as well without the turtle graphics compo
 * numbers
 * booleans
 
+It is best known for its association with "turtle graphics", a drawing metaphor where cursors called "turtles" are virtually driven around the screen with simple commands. It's pretty awesome.
+
 Procedure definitions look something like this:
 
 ```
@@ -35,6 +37,28 @@ to factorial :n
 end
 ```
 
+## Goals
+
+* Fun "turtle graphics" coding environment for the web
+* Logo language interpreter, for that classic 1980s feel
+* Introspect and debug code within the web page, for that 2010s feel
+* Minimize coupling between the turtle graphics, debugger frontend, and interpreter
+* Run well in modern web browser engines (ES2017)
+* Able to run inside an isolated environment such as a sandboxed `<iframe>`
+
+Note that the 4-up style REPL and debugger frontend, and the turtle graphics component, may become their own components separate from the Logo interpreter, with an eye towards providing support for other languages with their own interpreters.
+
+## Non-goals
+
+* Not meant to implement anything performance sensitive
+* Don't try to run in super-old browsers (though if transpiling works, great)
+* Don't compile to native or Wasm anything
+
+Several design decisions impact performance, such as putting `async`/`await` in several places in the interpreter hot loop. However this is what makes the interpreter pausable on the main thread, which allows for interactive debugging and visualization of code flow in real time or ssllooww mmoottiioonn.
+
+Currently ES2017 is required for modules and `async`/`await`. Transpiling with suitable runtime support may make it possible to run on older browsers, but this is not yet tested. The babel loader is used with Node.js for testing, configured just to do module loading.
+
+
 # Divergences from traditional Logos
 
 These details may change...
@@ -45,7 +69,7 @@ Variables and procedures share a common namespace and are case-sensitive.
 
 Procedures may be created inside a procedure.
 
-Lexical scoping (not dynamic), except that blocks executed via 'if' etc run in the caller's scope.
+Lexical scoping (not dynamic), except that blocks executed via 'if' etc run in the caller's scope and context.
 
 # Syntax
 
@@ -65,7 +89,7 @@ Lexical scoping (not dynamic), except that blocks executed via 'if' etc run in t
 
 Binary operators `-` `+` `*` `/` `<` `>` `=` and the unary operator `-` are available, with relative precedence rules.
 
-Note that operators bind more closely to arguments than you might expect in complex expressions: `print :x * somefunc :a - :b` will run as `print (:x * (somefunc (:a - :b)))` even though `print :x * :a - :b` will run as `print (:x * :a) - :b` as you might have expected.
+Note that operators bind more closely to arguments than you might expect in complex expressions: `print :x * somefunc :a - :b` will run as `print (:x * (somefunc (:a - :b)))` even though `print :x * :a - :b` will run as `print ((:x * :a) - :b)` as you might have expected.
 
 ## Accessors
 
