@@ -6,7 +6,7 @@ Turtle World is a Logo interpreter and turtle graphics environment for the web.
 
 See [on-web demo page](https://brionv.com/misc/turtle-world/) to try it out so far.
 
-It is intended for use in interactive programming theory demos on the web. Currently it is more or less functional but incomplete. Needs cleanup in the engine, parser, and standard library, and to have hooks added to support interactive program flow visualization and debugging.
+It is intended for use in interactive programming theory demos on the web. Currently it is more or less functional but incomplete. Needs cleanup in the engine, parser, and standard library, and more work on the interactive program flow visualization and debugging.
 
 Currently it requires an ES2017-level browser engine with support for `async`/`await` and modules for direct loading, or without modules for `require` usage through a Node bundler. It can probably be transpiled further to support ES5 (IE 11) but this is not currently a priority.
 
@@ -58,7 +58,6 @@ Several design decisions impact performance, such as putting `async`/`await` in 
 
 Currently ES2017 is required for modules and `async`/`await`. Transpiling with suitable runtime support may make it possible to run on older browsers, but this is not yet tested. The babel loader is used with Node.js for testing, configured just to do module loading.
 
-
 # Divergences from traditional Logos
 
 These details may change...
@@ -103,7 +102,7 @@ make "atari 400
 print thing "atari
 ```
 
-To get variable values, a shortcut `:` prefix can be used as a shortcut for `thing`:
+To get variable values, the `:` prefix can be used as a shortcut for `thing`:
 
 ```
 ; let's go big
