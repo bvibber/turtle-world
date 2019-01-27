@@ -440,8 +440,9 @@ export class Binding {
  *
  * ```logo
  * to is_big :n
- *   if gt :n 1000 [output true]
- *   if lt :n 1000 [output true]
+ *   if :n > 1000 [output true]
+ *   if :n < 1000 [output false]
+ *   print [just right]
  *   output false
  * end
  * ```
