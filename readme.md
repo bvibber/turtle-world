@@ -132,6 +132,15 @@ runs as would the explicitly demarcated form:
 
 Since it's unknown before execution whether a procedure call will return a value (an "operation") or not (a "command"), this is checked at runtime after execution. If a missing return value was expected as input to another call's argument, this will cause an error.
 
+A series of non-value-returning commands may be chained in the same expression, which is common in turtle graphics:
+
+```
+penup back 100 right 10 pendown
+repeat 18 [
+   forward 200 right 10 back 200 right 10
+]
+```
+
 ## Instruction lists
 
 Some commands and operations take blocks of code as instruction lists, which are interpreted like a procedure body. Usually list literals in source code are used to write instruction lists, but you could create them at runtime through list manipulation procedures.
