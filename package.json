@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npx babel src --out-dir lib",
     "clean": "rm -rf lib",
-    "test": "npx mocha --require esm"
+    "test": "npx mocha"
   },
   "keywords": [
     "logo",
