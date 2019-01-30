@@ -327,6 +327,22 @@ describe('Logo', function() {
         it('should return false for: false', async function() {
             await logoTest("testout false", false);
         });
+        it('should work on or', async function() {
+            await logoTest("testout or true true", true);
+            await logoTest("testout or true false", true);
+            await logoTest("testout or false true", true);
+            await logoTest("testout or false false", false);
+            await logoTest("testout (or false false true)", true);
+            await logoTest("testout (or false false false)", false);
+        });
+        it('should work on and', async function() {
+            await logoTest("testout and true true", true);
+            await logoTest("testout and true false", false);
+            await logoTest("testout and false true", false);
+            await logoTest("testout and false false", false);
+            await logoTest("testout (and true true true)", true);
+            await logoTest("testout (and true true false)", false);
+        });
 
         // math
         it('should return 5 for: sum 2 3', async function() {

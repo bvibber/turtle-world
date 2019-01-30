@@ -581,13 +581,50 @@ function unaryMinus(a) {
 
 // Builtin procedures
 let builtins = {
-    // Primitive setups
+    // Logical operations
     true: async function() {
         return true;
     },
     false: async function() {
         return false;
     },
+    and: async function(a, b, ...rest) {
+        // UCBLogo extends this to support instruction
+        // lists with lazy evaluation. Consider this.
+        if (!a) {
+            return false;
+        }
+        if (!b) {
+            return false;
+        }
+        for (let item of rest) {
+            if (!item) {
+                return false;
+            }
+        }
+        return true;
+    },
+    or: async function(a, b, ...rest) {
+        // UCBLogo extends this to support instruction
+        // lists with lazy evaluation. Consider this.
+        if (a) {
+            return true;
+        }
+        if (b) {
+            return true;
+        }
+        for (let item of rest) {
+            if (item) {
+                return true;
+            }
+        }
+        return false;
+    },
+    not: async function(a) {
+        return !a;
+    },
+
+    // Lists and words
     word: async function(a, b, ...rest) {
         return String(a) + String(b) + rest.join();
     },
@@ -974,13 +1011,9 @@ let builtins = {
 
 // Aliases of builtin procedures and macros
 let aliases = {
-    get: 'thing',
-    set: 'make',
-    add: 'sum',
-    mul: 'product',
-    div: 'quotient',
-    sub: 'difference',
-    modulo: 'remainder',
+    'op': 'output',
+    'bf': 'butfirst',
+    'bl': 'butlast',
 };
 for (let [alias, original] of Object.entries(aliases)) {
     builtins[alias] = builtins[original];
