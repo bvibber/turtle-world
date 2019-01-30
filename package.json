@@ -2,7 +2,7 @@
   "name": "turtle-world",
   "version": "1.0.0",
   "description": "Logo interpreter and turtle graphics environment",
-  "main": "lib/logo.js",
+  "main": "index.js",
   "scripts": {
     "test": "npx mocha --require esm"
   },
