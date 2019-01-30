@@ -44,6 +44,7 @@ end
 * Introspect and debug code within the web page, for that 2010s feel
 * Minimize coupling between the turtle graphics, debugger frontend, and interpreter
 * Run well in modern web browser engines (ES2017)
+* Few or no dependencies
 * Able to run inside an isolated environment such as a sandboxed `<iframe>`
 
 Note that the 4-up style REPL and debugger frontend, and the turtle graphics component, may become their own components separate from the Logo interpreter, with an eye towards providing support for other languages with their own interpreters.
@@ -66,9 +67,7 @@ Lists and instruction arguments may span across newlines, which are treated the 
 
 Variable and procedure names are case-sensitive.
 
-Procedures may be created inside a procedure.
-
-Lexical scoping (not dynamic), except that blocks executed via 'if' etc run in the caller's scope and context.
+Procedures may be created inside a procedure, but they will still be global.
 
 # Syntax
 
@@ -112,9 +111,31 @@ make "atari :atari + 400
 print :atari
 ```
 
+## Scoping
+
+Procedures have a single global namespace.
+
+Variables may be either global, or be local to a running procedure's scope. Arguments to a procedure are counted among its locals.
+
+A particular oddity of Logo is that scoping of locals is dynamic -- each procedure inherits access to the locals of its caller. This is unusual for users of more modern languages, and may lead to confusion when variable names are reused in multiple procedures. But it does allow virtually passing extra arguments down to a sub-call, such as an instruction list passed to another procedure.
+
+Setting an unbound variable value with `make` will create a global, but if the same var name was used in a calling procedure it may unexpectedly be a bound local! To explicitly bind a new local variable (which may safely shadow a caller's local or a global), use the `local` or `global` commands to bind them:
+
+```
+to somestuff
+  local "a
+  make "a [some local stuff]
+
+  ; You can even rebind within a procedure.
+
+  global "a
+  make "a [some global stuff]
+end
+```
+
 ## Expressions
 
-Executable expressions are themselves lists, in the form of a name for a procedure call (looked up in current or lexical parent scope) and zero or more argument values, which themselves may be the outputs of procedure calls.
+Executable expressions are themselves lists, in the form of a name for a procedure call (in a single global namespace) and zero or more argument values, which themselves may be the outputs of procedure calls.
 
 Expressions may be wrapped in parentheses to explicitly demarcate argument list boundaries, or they may be implicitly derived from the declared procedure's number of arguments.
 
@@ -153,7 +174,7 @@ if :a = :b [
 ]
 ```
 
-Currently the blocks are executed in the same scope and context as the function that called the block-using operation to allow local variable access and local `output` and `stop` commands:
+Currently the blocks are executed in the same scope and context as the procedure that called the block-using operation to allow local `output` and `stop` commands:
 
 ```
 forever [
@@ -165,8 +186,6 @@ forever [
     ]
 ]
 ```
-
-The scoping rules may change to more traditional Logo dynamic scope rules where locals are exposed to called procedure scopes.
 
 # Internals
 

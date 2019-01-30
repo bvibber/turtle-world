@@ -850,7 +850,7 @@ let builtins = {
             throw new TypeError('function must have a body');
         }
         let body = args.pop();
-        let func = this.procedure(parentScope, name, args, body);
+        let func = this.procedure(name, args, body);
         this.procedureScope.bindValue(name, func);
     },
 
@@ -1084,13 +1084,12 @@ export class Interpreter {
      * Create a live function object wrapping a Logo
      * procedure definition.
      *
-     * @param {Scope} parentScope 
      * @param {string} funcName 
      * @param {Iterable<string>} argNames 
      * @param {Iterable<LogoValue>} body 
      * @returns {function}
      */
-    procedure(parentScope, funcName, argNames, body) {
+    procedure(funcName, argNames, body) {
         if (!isString(funcName)) {
             throw new TypeError('function name must be a string');
         }
@@ -1101,6 +1100,7 @@ export class Interpreter {
         }
         let func = async (...args) => {
             // Locally bind the arguments
+            let parentScope = this.currentScope();
             let scope = new Scope(parentScope);
             for (let [index, name] of argNames.entries()) {
                 scope.bindValue(name, args[index]);
@@ -1686,7 +1686,7 @@ export class Interpreter {
                 iter = iter.tail;
             }
 
-            let proc = interpreter.procedure(interpreter.currentScope(), name, args, body.list);
+            let proc = interpreter.procedure(name, args, body.list);
             interpreter.procedureScope.set(name, proc);
             return;
         }

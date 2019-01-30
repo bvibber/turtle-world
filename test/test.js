@@ -36,8 +36,9 @@ async function logoTest(input, output, procs={}) {
 async function logoPrint(input, output, procs={}) {
     let prints = [];
     let retval = await logoRun(input, procs, prints);
-    assert.ok(List.equal(prints[0], output),
-        "expected " + String(output) + " but got " + String(prints[0]));
+    let printed = prints.join('\n');
+    assert.ok(List.equal(printed, output),
+        "expected " + String(output) + " but got " + String(printed));
 }
 
 async function logoTry(input, errorType, procs={}) {
@@ -577,6 +578,24 @@ describe('Logo', function() {
                 testout :avar
             `;
             await logoTest(source, "global2");
+        });
+        it('should do dynamic scope: expose locals to subprocedure calls', async function() {
+            let source = `
+                to proc1
+                    local "avar
+                    make "avar "local1
+                    proc2
+                    print :avar
+                end
+                to proc2
+                    print :avar
+                    make "avar "local2
+                end
+                make "avar "global
+                proc1
+                print :avar
+            `;
+            await logoPrint(source, 'local1\nlocal2\nglobal');
         });
     });
 });
