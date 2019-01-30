@@ -777,6 +777,43 @@ let builtins = {
         }
         this.currentScope().set(name, val);
     },
+    local: async function(name, ...names) {
+        let all;
+        if (isList(name)) {
+            all = Array.from(name);
+        } else {
+            all = [name];
+        }
+        for (let n of names) {
+            all.push(n);
+        }
+        for (let n of all) {
+            if (!isString(n)) {
+                throw new TypeError('Invalid variable name');
+            }
+            let binding = new Binding();
+            this.currentScope().bind(n, binding);
+        }
+    },
+    global: async function(name, ...names) {
+        let all;
+        if (isList(name)) {
+            all = Array.from(name);
+        } else {
+            all = [name];
+        }
+        for (let n of names) {
+            all.push(n);
+        }
+        for (let n of all) {
+            if (!isString(n)) {
+                throw new TypeError('Invalid variable name');
+            }
+            let binding = new Binding();
+            this.globalScope.bind(n, binding);
+            this.currentScope().bind(n, binding);
+        }
+    },
     push: async function(name, val) {
         let scope = this.currentScope();
         let list = scope.get(name);

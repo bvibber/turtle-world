@@ -554,5 +554,29 @@ describe('Logo', function() {
             `;
             await logoTest(source, "global");
         });
-    })
+        it('should bind locally with local command', async function() {
+            let source = `
+                make "avar "global
+                to dostuff
+                    local "avar
+                    make "avar "local
+                end
+                dostuff
+                testout :avar
+            `;
+            await logoTest(source, "global");
+        });
+        it('should bind globally with global command', async function() {
+            let source = `
+                make "avar "global1
+                to dostuff :avar
+                    global "avar
+                    make "avar "global2
+                end
+                dostuff "arg
+                testout :avar
+            `;
+            await logoTest(source, "global2");
+        });
+    });
 });
