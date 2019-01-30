@@ -2,7 +2,7 @@
  * Demo for Logo interpreter in ES2017.
  * See `readme.md` for details.
  *
- * @file index.js
+ * @file demo.js
  * @author Brion Vibber <brion@pobox.com>
  * @license ISC
  */

@@ -1,4 +1,4 @@
-import {List, Interpreter} from '../src/logo.js';
+let {List, Interpreter} = require('../src/logo.js');
 
 let assert = require('assert');
 

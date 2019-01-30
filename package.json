@@ -4,9 +4,7 @@
   "description": "Logo interpreter and turtle graphics environment",
   "main": "lib/logo.js",
   "scripts": {
-    "build": "npx babel src --out-dir lib",
-    "clean": "rm -rf lib",
-    "test": "npx mocha --require @babel/register"
+    "test": "npx mocha --require esm"
   },
   "keywords": [
     "logo",
@@ -16,12 +14,10 @@
   "author": "Brion Vibber",
   "license": "ISC",
   "devDependencies": {
-    "@babel/cli": "^7.2.3",
-    "@babel/core": "^7.2.2",
-    "@babel/preset-env": "^7.3.1",
-    "@babel/register": "^7.0.0",
     "mocha": "^5.2.0"
   },
   "browserslist": "> 5%, not IE 11",
-  "dependencies": {}
+  "dependencies": {
+    "esm": "^3.1.4"
+  }
 }

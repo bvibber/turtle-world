@@ -57,7 +57,7 @@ Note that the 4-up style REPL and debugger frontend, and the turtle graphics com
 
 Several design decisions impact performance, such as putting `async`/`await` in several places in the interpreter hot loop. However this is what makes the interpreter pausable on the main thread, which allows for interactive debugging and visualization of code flow in real time or ssllooww mmoottiioonn.
 
-Currently ES2017 is required for modules and `async`/`await`. Transpiling with suitable runtime support may make it possible to run on older browsers, but this is not yet tested. The babel loader is used with Node.js for testing, configured just to do module loading.
+Currently ES2017 is required for modules and `async`/`await`. Transpiling with suitable runtime support may make it possible to run on older browsers, but this is not yet tested. The `esm` loader is used with Node.js for testing, configured just to do module loading.
 
 # Divergences from traditional Logos
 
