@@ -24,28 +24,10 @@ const precedence = {
     '=': 1,
 };
 
-/**
- * @typedef Atom
- * @type {(boolean|number|string|function)}
- */
-
-/**
- * @typedef LogoValue
- * @type {(Atom|List)}
- */
-
-/**
- * @param {*} val 
- * @returns {boolean}
- */
 function isNumber(val) {
     return typeof val === 'number';
 }
 
-/**
- * @param {*} val 
- * @returns {boolean}
- */
 function isString(val) {
     return typeof val === 'string';
 }
@@ -79,45 +61,14 @@ function isLiteral(val) {
         || isQuoted(val) || isVariable(val);
 }
 
-/**
- * @param {*} val 
- * @returns {boolean}
- */
 function isBoolean(val) {
     return typeof val === 'boolean';
 }
 
-/**
- * @param {*} val 
- * @returns {boolean}
- */
-function isFunction(val) {
-    return typeof val === 'function';
-}
-
-/**
- * @param {*} val 
- * @returns {boolean}
- */
 function isList(val) {
     return val instanceof List;
 }
 
-/**
- * @param {*} val 
- * @returns {boolean}
- */
-function isAtom(val) {
-    return isFunction(val) || isString(val) || isNumber(val) || isBoolean(val);
-}
-
-/**
- * @param {*} val 
- * @returns {boolean}
- */
-function isValue(val) {
-    return isList(val) || isAtom(val);
-}
 
 /**
  * Convenience class for creating lists from front to back.
@@ -228,7 +179,7 @@ export class List {
             if (List.empty) {
                 throw new TypeError('Only one empty list may be created');
             }
-            this.head = this;
+            this.head = undefined;
             this.tail = this;
         } else {
             this.head = head;
@@ -240,14 +191,14 @@ export class List {
      * @returns {boolean}
      */
     isEmpty() {
-        return this === List.empty;
+        return this.head === undefined;
     }
 
     /**
      * @returns {boolean}
      */
     hasTail() {
-        return this.tail !== List.empty;
+        return !this.tail.isEmpty();
     }
 
     /**
@@ -663,7 +614,15 @@ let builtins = {
         }
         throw new TypeError('list must be a list');
     },
-
+    count: async function(arg) {
+        if (isList(arg)) {
+            return arg.count();
+        }
+        if (isString(arg)) {
+            return arg.length;
+        }
+        throw new TypeError('arg must be a word or list');
+    },
     first: async function(arg) {
         if (isString(arg)) {
             if (arg === '') {
