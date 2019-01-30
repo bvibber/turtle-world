@@ -870,10 +870,16 @@ let builtins = {
     // Control structures
     stop: async function() {
         let context = this.currentContext();
+        if (context === this.globalContext) {
+            throw new SyntaxError('stop is not allowed at top level');
+        }
         context.stop = true;
     },
     output: async function(arg) {
         let context = this.currentContext();
+        if (context === this.globalContext) {
+            throw new SyntaxError('output is not allowed at top level');
+        }
         context.stop = true;
         context.output = arg;
     },

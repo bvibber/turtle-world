@@ -489,4 +489,14 @@ describe('Logo', function() {
             await logoTest(source, undefined);
         })
     });
+    describe('Toplevel stuff checks', function() {
+        it('should not allow stop at toplevel', async function() {
+            let source = `stop`;
+            await logoTry(source, SyntaxError);
+        });
+        it('should not allow stop at toplevel', async function() {
+            let source = `output 42`;
+            await logoTry(source, SyntaxError);
+        });
+    });
 });
