@@ -597,5 +597,20 @@ describe('Logo', function() {
             `;
             await logoPrint(source, 'local1\nlocal2\nglobal');
         });
+        it('should not destroy a global value when binding', async function() {
+            let source = `
+                to proc
+                    print :avar
+                    local "avar
+                    make "avar "local
+                    print :avar
+                    global "avar
+                    print :avar
+                end
+                make "avar "global
+                proc
+            `;
+            await logoPrint(source, 'global\nlocal\nglobal');
+        });
     });
 });

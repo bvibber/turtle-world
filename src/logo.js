@@ -809,8 +809,11 @@ let builtins = {
             if (!isString(n)) {
                 throw new TypeError('Invalid variable name');
             }
-            let binding = new Binding();
-            this.globalScope.bind(n, binding);
+            let binding = this.globalScope.getBinding(n);
+            if (!binding) {
+                binding = new Binding();
+                this.globalScope.bind(n, binding);
+            }
             this.currentScope().bind(n, binding);
         }
     },
