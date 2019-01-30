@@ -521,4 +521,38 @@ describe('Logo', function() {
             await logoTest(source, 'supercool');
         });
     });
+    describe('Variable scoping', function() {
+        it('should treat globals as globals', async function() {
+            let source = `
+                make "aglobal "global1
+                to dostuff
+                    make "aglobal "global2
+                end
+                dostuff
+                testout :aglobal
+            `;
+            await logoTest(source, "global2");
+        });
+        it('should treat args as locals', async function() {
+            let source = `
+                make "anarg "global
+                to becool :anarg
+                    make "anarg "local
+                end
+                becool "arg
+                testout :anarg
+            `;
+            await logoTest(source, "global");
+        });
+        it('should create new vars as global by default', async function() {
+            let source = `
+                to dostuff
+                    make "aglobal "global
+                end
+                dostuff
+                testout :aglobal
+            `;
+            await logoTest(source, "global");
+        });
+    })
 });

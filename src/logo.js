@@ -461,7 +461,9 @@ export class Scope {
      * @param {Scope} ?parent
      */
     constructor(parent) {
-        // Use the prototype chain to 
+        this.parent = parent;
+
+        // Use the prototype chain to aid lookups
         this.bindings = Object.create(parent ? parent.bindings : null);
     }
 
@@ -486,7 +488,12 @@ export class Scope {
         if (binding) {
             binding.value = val;
         } else {
-            this.bindValue(name, val);
+            // Unbound vars should jump to global scope.
+            let scope = this;
+            while (scope.parent) {
+                scope = scope.parent;
+            }
+            scope.bindValue(name, val);
         }
     }
 
