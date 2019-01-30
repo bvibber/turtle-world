@@ -4,7 +4,7 @@
   "description": "Logo interpreter and turtle graphics environment",
   "main": "index.js",
   "scripts": {
-    "test": "npx mocha --require esm"
+    "test": "npx mocha"
   },
   "keywords": [
     "logo",

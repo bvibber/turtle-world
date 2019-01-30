@@ -1,4 +1,4 @@
-let {List, Interpreter} = require('../src/logo.js');
+let {List, Interpreter} = require('../index.js');
 
 let assert = require('assert');
 
