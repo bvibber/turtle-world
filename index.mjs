@@ -2,13 +2,13 @@
  * Demo for Logo interpreter in ES2017.
  * See `readme.md` for details.
  *
- * @file index.js
+ * @file index.mjs
  * @author Brion Vibber <brion@pobox.com>
  * @license ISC
  */
 
-import {Interpreter, List} from './logo.js';
-import {TurtleGraphics} from './turtle.js';
+import {Interpreter, List} from './logo.mjs';
+import {TurtleGraphics} from './turtle.mjs';
 
 let el = document.getElementById('logo-display');
 let elConsole = document.getElementById('logo-console');

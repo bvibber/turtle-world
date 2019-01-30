@@ -2,7 +2,7 @@
  * Turtle graphics backend for Logo interpreter in ES2017.
  * See `readme.md` for details.
  * 
- * @file turtle.js
+ * @file turtle.mjs
  * @author Brion Vibber <brion@pobox.com>
  * @license ISC
  */

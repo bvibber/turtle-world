@@ -1,4 +1,5 @@
-import {List, Interpreter} from '../src/logo.js';
+require = require('esm')(module);
+let {List, Interpreter} = require('../logo.mjs');
 
 let assert = require('assert');
 
