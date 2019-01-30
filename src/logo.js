@@ -827,36 +827,6 @@ let builtins = {
         scope.set(list);
     },
 
-    // Functions
-    /**
-     * Call a function object by reference.
-     */
-    call: async function(func, ...args) {
-        if (typeof func === 'function') {
-            return await this.performCall(func, args);
-        }
-    },
-
-    /**
-     * Create a callable function and bind it in the current
-     * scope.
-     *
-     * @param {string} name 
-     * @param {array} ...args: zero or more argument names and a list of lists with calls
-     */
-    to: async function(name, ...args) {
-        let parentScope = this.currentScope();
-        if (!isString(name)) {
-            throw new TypeError('function name must be a string');
-        }
-        if (args.length < 1) {
-            throw new TypeError('function must have a body');
-        }
-        let body = args.pop();
-        let func = this.procedure(name, args, body);
-        this.procedureScope.bindValue(name, func);
-    },
-
     // Infix operators
     '+': async function(a, b) {
         return a + b;

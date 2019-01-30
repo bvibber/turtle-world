@@ -227,11 +227,11 @@ It would be possible to add `throw`/`catch`/`finally` support at the Logo level 
 
 # Security
 
-Logo code may call any JavaScript function that is passed in and bound as a variable value. If you do not wish this to happen, don't give it functions.
+Logo code may call any JavaScript function that is bound as a procedure. Variables cannot be called directly however, so passing a function in as a Logo procedure argument will not make it callable from Logo.
 
 There are no limits on memory usage for strings, lists, variable and procedure bindings, etc. It may be possible for Logo code to overuse memory, which may cause a crashed tab or Node process.
 
-It's possible for Logo code to hog the main loop and prevent input, timers etc from running if there are no actual asynchronous operations called during a `repeat` or `forever` loop. Embedders may prevent this by forcing an event-loop bounce with `setTimeout` or `postMessage` in the `oncall` or `onliteral` callbacks.
+It's possible for Logo code to hog the main loop and prevent input, timers etc from running if there are no actual asynchronous operations called during a `repeat` or `forever` loop. Embedders may prevent this by forcing an event-loop bounce with `setTimeout` or `postMessage` in the `oncall` or `onvalue` callbacks.
 
 # Open projects
 
