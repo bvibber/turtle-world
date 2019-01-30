@@ -389,6 +389,66 @@ describe('Logo', function() {
             await logoTest(`testout item 2 [a b]`, "b");
         });
     });
+    describe('List and word operations', function() {
+        // from https://archive.org/details/AtariLOGOReferenceManual/page/n59
+        it('should give first "john as j', async function() {
+            await logoTest(`testout first "john`, 'j');
+        });
+        it('should give bf "john as ohn', async function() {
+            await logoTest(`testout bf "john`, 'ohn');
+        });
+        it('should give first [mary john bill] as mary', async function() {
+            await logoTest(`testout first [mary john bill]`, 'mary');
+        });
+        it('should give bf [mary john bill] as [john bill]', async function() {
+            await logoTest(`testout bf [mary john bill]`, List.of('john', 'bill'));
+        });
+        it('should give first [[mary john] bill] as [mary john]', async function() {
+            await logoTest(`testout first [[mary john] bill]`, List.of('mary', 'john'));
+        });
+        it('should give bf [[mary john] bill] as [bill]', async function() {
+            await logoTest(`testout bf [[mary john] bill]`, List.of('bill'));
+        });
+        it('should throw on first []', async function() {
+            await logoTry(`testout first []`, TypeError);
+        });
+        it('should throw on bf []', async function() {
+            await logoTry(`testout bf []`, TypeError);
+        });
+
+
+        it('should error on fput "logo "time', async function() {
+            await logoTry(`testout fput "logo "time`, TypeError);
+        });
+        it('should give list "logo "time as [logo time]', async function() {
+            await logoTest(`testout list "logo "time`, List.of('logo', 'time'));
+        });
+        it('should error on lput "logo "time', async function() {
+            await logoTry(`testout lput "logo "time`, TypeError);
+        });
+        it('should give se "logo "time as [logo time]', async function() {
+            await logoTest(`testout se "logo "time`, List.of('logo', 'time'));
+        });
+        it('should give word "logo "time as logotime', async function() {
+            await logoTest(`testout word "logo "time`, 'logotime');
+        });
+
+        it('should give fput [and more] [to come] as [[and more] to come]', async function() {
+            await logoTest('testout fput [and more] [to come]', List.of(List.of('and', 'more'), 'to', 'come'));
+        });
+        it('should give list [and more] [to come] as [[and more] [to come]', async function() {
+            await logoTest('testout list [and more] [to come]', List.of(List.of('and', 'more'), List.of('to', 'come')));
+        });
+        it('should give lput [and more] [to come] as [to come [and more]]', async function() {
+            await logoTest('testout lput [and more] [to come]', List.of('to', 'come', List.of('and', 'more')));
+        });
+        it('should give se [and more] [to come] as [and more to come]', async function() {
+            await logoTest('testout se [and more] [to come]', List.of('and', 'more', 'to', 'come'));
+        });
+        it('should error on word [and more] [to come]', async function() {
+            await logoTry('testout word [and more] [to come]', TypeError);
+        });
+    });
     describe("Blocks and meta-execution", function() {
         it('should run code inside if true', async function() {
             await logoTest(`testout "initial if true [testout "block\\ ran]`, 'block ran');
@@ -410,7 +470,7 @@ describe('Logo', function() {
         it('should return 120 for "factorial 5"', async function() {
             let source = `
             to factorial :n
-                if greaterp :n 0 [
+                if :n > 0 [
                     output product :n factorial difference :n 1
                 ]
                 output 1
@@ -471,7 +531,7 @@ describe('Logo', function() {
                 ]
                 make "n 12
                 repeat 12 [
-                    if lessp :n sum :day 1 [
+                    if :n < :day + 1 [
                         (print :n first :gifts)
                     ]
                     make "gifts butfirst :gifts
@@ -494,7 +554,7 @@ describe('Logo', function() {
                 (print :n [bottles of beer])
                 print [take one down, pass it around]
                 make "n difference :n 1
-                if greaterp :n 0 [
+                if :n > 0 [
                     (print :n [bottles of beer on the wall])
                     print []
                     drink :n

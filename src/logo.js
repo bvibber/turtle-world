@@ -56,18 +56,24 @@ function isProcedure(val) {
     return true;
 }
 
-function isLiteral(val) {
-    return isList(val) || isBoolean(val) || isNumber(val)
-        || isQuoted(val) || isVariable(val);
-}
-
 function isBoolean(val) {
     return typeof val === 'boolean';
+}
+
+function isWord(val) {
+    let type = typeof val;
+    return type === 'string' || type === 'number' || type === 'boolean';
 }
 
 function isList(val) {
     return val instanceof List;
 }
+
+function isLiteral(val) {
+    return isList(val) || isBoolean(val) || isNumber(val)
+        || isQuoted(val) || isVariable(val);
+}
+
 
 
 /**
@@ -577,10 +583,30 @@ let builtins = {
 
     // Lists and words
     word: async function(a, b, ...rest) {
-        return String(a) + String(b) + rest.join();
+        let args = [a, b].concat(rest);
+        for (let arg of args) {
+            if (!isWord(arg)) {
+                throw new TypeError('args must be words');
+            }
+        }
+        return args.join('');
+    },
+    se: async function(a, b, ...rest) {
+        let args = [a, b].concat(rest);
+        let builder = new ListBuilder();
+        for (let arg of args) {
+            if (isList(arg)) {
+                for (let item of arg) {
+                    builder.push(item);
+                }
+            } else {
+                builder.push(arg);
+            }
+        }
+        return builder.list;
     },
     list: async function(a, b, ...rest) {
-        return new List(a, new List(b, list.from(rest)));
+        return new List(a, new List(b, List.from(rest)));
     },
     fput: async function(thing, list) {
         if (!isList(list)) {
@@ -864,20 +890,38 @@ let builtins = {
     },
 
     // Predicates
+    emptyp: async function(arg) {
+        if (isList(arg)) {
+            return arg.isEmpty();
+        }
+        if (isString(arg)) {
+            return arg === '';
+        }
+        return false;
+    },
     equalp: async function(a, b) {
         return List.equal(a, b);
     },
-    lessp: async function(a, b) {
-        return a < b;
+    listp: async function(arg) {
+        return isList(arg);
     },
-    lessequalp: async function(a, b) {
-        return a <= b;
+    memberp: async function(arg, list) {
+        if (!isList(list)) {
+            throw new TypeError('list must be a list');
+        }
+        for (let item in list) {
+            if (List.equal(arg, item)) {
+                return true;
+            }
+        }
+        return false;
     },
-    greaterp: async function(a, b) {
-        return a > b;
+    numberp: async function(arg) {
+        return isNumber(arg);
     },
-    greaterequalp: async function(a, b) {
-        return a >= b;
+    wordp: async function(arg) {
+        // Note in Atari Logo at least, words include numbers and booleans
+        return isWord(arg);
     },
 
     // Control structures
