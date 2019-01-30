@@ -128,7 +128,7 @@ let api = {
     },
 };
 
-logo.globalScope.bindValues(api);
+logo.procedureScope.bindValues(api);
 logo.onprint = async function(str) {
     print('output', str);
 };

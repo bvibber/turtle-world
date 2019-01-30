@@ -64,7 +64,7 @@ These details may change...
 
 Lists and instruction arguments may span across newlines, which are treated the same as spaces. Closing parentheses and brackets are required.
 
-Variables and procedures share a common namespace and are case-sensitive.
+Variable and procedure names are case-sensitive.
 
 Procedures may be created inside a procedure.
 

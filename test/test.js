@@ -2,11 +2,11 @@ import {List, Interpreter} from '../src/logo.js';
 
 let assert = require('assert');
 
-async function logoRun(input, globals={}, output=[]) {
+async function logoRun(input, procs={}, output=[]) {
     let logo = new Interpreter();
     let retval;
-    logo.globalScope.bindValues(globals);
-    logo.globalScope.bindValues({
+    logo.procedureScope.bindValues(procs);
+    logo.procedureScope.bindValues({
         testout: async function(arg) {
             // "testout" command returns value literally
             retval = arg;
@@ -27,23 +27,23 @@ function logoParse(input, output) {
         "expected " + String(output) + " but got " + String(retval));
 }
 
-async function logoTest(input, output, globals={}) {
-    let retval = await logoRun(input, globals);
+async function logoTest(input, output, procs={}) {
+    let retval = await logoRun(input, procs);
     assert.ok(List.equal(retval, output),
         "expected " + String(output) + " but got " + String(retval));
 }
 
-async function logoPrint(input, output, globals={}) {
+async function logoPrint(input, output, procs={}) {
     let prints = [];
-    let retval = await logoRun(input, globals, prints);
+    let retval = await logoRun(input, procs, prints);
     assert.ok(List.equal(prints[0], output),
         "expected " + String(output) + " but got " + String(prints[0]));
 }
 
-async function logoTry(input, errorType, globals={}) {
+async function logoTry(input, errorType, procs={}) {
     let retval;
     try {
-        retval = await logoRun(input, globals);
+        retval = await logoRun(input, procs);
     } catch (e) {
         assert.ok(e instanceof errorType, "expected " + errorType.name + " but threw " + e);
         return;
@@ -497,6 +497,28 @@ describe('Logo', function() {
         it('should not allow stop at toplevel', async function() {
             let source = `output 42`;
             await logoTry(source, SyntaxError);
+        });
+    });
+    describe('Variable vs procedure namespaces', function() {
+        it('should not overwrite a procedure with a var', async function() {
+            let source = `
+                to becool
+                    output "cool
+                end
+                make "becool "notcool
+                testout becool
+            `;
+            await logoTest(source, 'cool');
+        });
+        it('should not overwrite a var with a procedure', async function() {
+            let source = `
+                make "becool "supercool
+                to becool
+                    output "cool
+                end
+                testout :becool
+            `;
+            await logoTest(source, 'supercool');
         });
     });
 });

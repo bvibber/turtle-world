@@ -807,7 +807,7 @@ let builtins = {
         }
         let body = args.pop();
         let func = this.procedure(parentScope, name, args, body);
-        parentScope.bindValue(name, func);
+        this.procedureScope.bindValue(name, func);
     },
 
     // Infix operators
@@ -971,16 +971,26 @@ for (let [alias, original] of Object.entries(aliases)) {
 
 export class Interpreter {
     constructor() {
+        // procedurs
+        this.procedureScope = new Scope();
+        this.procedureScope.bindValues(builtins);
+        // variables
         this.globalScope = new Scope();
-        this.globalScope.bindValues(builtins);
+        // top-level context
         this.globalContext = new Context();
+
+        // stack
         this.scopes = [this.globalScope];
         this.contexts = [this.globalContext];
+
+        // keeps track of original source position of parsed list nodes
         this.sourceMap = new WeakMap();
 
         // Set to true during program execution.
         this.running = false;
+        // Set to true when break() is called.
         this.breakFlag = false;
+        // Set to true when pause() is called.
         this.paused = false;
 
         // Sync callback for cancelable async operations
@@ -1348,7 +1358,7 @@ export class Interpreter {
     async runTemplate(template, args) {
         if (isString(template)) {
             // word -> command
-            let binding = this.currentScope().getBinding(template);
+            let binding = this.procedureScope.getBinding(template);
             if (!binding) {
                 throw new ReferenceError('Unbound template command ' + template);
             }
@@ -1407,7 +1417,7 @@ export class Interpreter {
                 throw new SyntaxError('Invalid command word: ' + command);
             }
 
-            let binding = scope.getBinding(command);
+            let binding = interpreter.procedureScope.getBinding(command);
             if (!binding) {
                 throw new TypeError('Unbound function: ' + command);
             }
@@ -1633,7 +1643,7 @@ export class Interpreter {
             }
 
             let proc = interpreter.procedure(interpreter.currentScope(), name, args, body.list);
-            interpreter.currentScope().set(name, proc);
+            interpreter.procedureScope.set(name, proc);
             return;
         }
 
